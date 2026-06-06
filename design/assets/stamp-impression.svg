@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" fill="none">
+  
+  <g transform="translate(100 60)">
+    
+    <g transform="rotate(-6)">
+      <rect x="-78" y="-46" width="156" height="92" rx="4" fill="none" stroke="#8E2A1C" stroke-width="2.5"></rect>
+      <rect x="-72" y="-40" width="144" height="80" rx="2" fill="none" stroke="#8E2A1C" stroke-width="1"></rect>
+      <text x="0" y="-14" font-family="Newsreader, serif" font-style="italic" font-size="22" font-weight="600" fill="#8E2A1C" text-anchor="middle">Narrowsburg</text>
+      <text x="0" y="10" font-family="Public Sans, sans-serif" font-size="10" font-weight="700" letter-spacing="3" fill="#8E2A1C" text-anchor="middle">VERIFIED  REGULAR</text>
+      <text x="0" y="30" font-family="DM Mono, monospace" font-size="9" font-weight="500" fill="#8E2A1C" text-anchor="middle">06 · 2026 · NY</text>
+    </g>
+  </g>
+</svg>

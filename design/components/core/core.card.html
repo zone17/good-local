@@ -1,0 +1,127 @@
+<!-- @dsCard group="Components" viewport="700x780" name="Core primitives" subtitle="Button, IconButton, Card, Badge, Tag, Input, Switch, Tabs, Stat, Notice, Row" -->
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body{margin:0;padding:24px;background:var(--paper-50);font-family:var(--font-body);color:var(--ink-1000)}
+  section{margin-bottom:22px}
+  h3{margin:0 0 10px;font:600 11px/1 var(--font-body);text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-500)}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .stack{display:flex;flex-direction:column;gap:10px}
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {
+  Button, IconButton, Card, Badge, Tag, Input, Textarea, Field, Switch,
+  Tabs, Stat, Notice, Row, Divider, Icon
+} = window.GoodLocalDesignSystem_db344c;
+
+function App(){
+  const [tab,setTab] = React.useState("All");
+  const [on,setOn] = React.useState(true);
+  return (
+    <div className="stack">
+      <section>
+        <h3>Button — variants</h3>
+        <div className="row">
+          <Button>Save perk</Button>
+          <Button variant="secondary">Cancel</Button>
+          <Button variant="ghost">Skip</Button>
+          <Button variant="danger">Remove</Button>
+          <Button variant="wallet" leadingIcon={<Icon name="wallet"/>}>Add to Apple Wallet</Button>
+        </div>
+      </section>
+      <section>
+        <h3>Button — sizes & states</h3>
+        <div className="row">
+          <Button size="sm">Small</Button>
+          <Button>Default</Button>
+          <Button size="lg">Large</Button>
+          <Button disabled>Disabled</Button>
+          <Button leadingIcon={<Icon name="qr" size={16}/>}>Scan QR</Button>
+        </div>
+      </section>
+      <section>
+        <h3>IconButton</h3>
+        <div className="row">
+          <IconButton label="Back"><Icon name="arrow-left"/></IconButton>
+          <IconButton label="Menu" bordered><Icon name="menu"/></IconButton>
+          <IconButton size="lg" bordered label="Close"><Icon name="x"/></IconButton>
+          <IconButton label="Bell"><Icon name="bell"/></IconButton>
+          <IconButton label="Search"><Icon name="search"/></IconButton>
+        </div>
+      </section>
+      <section>
+        <h3>Cards</h3>
+        <div className="grid">
+          <Card><strong>White card</strong><div style={{color:'var(--ink-500)',fontSize:13,marginTop:4}}>Default surface, soft warm shadow.</div></Card>
+          <Card variant="kraft"><strong>Kraft card</strong><div style={{color:'var(--ink-700)',fontSize:13,marginTop:4}}>Paper-200, owner notes.</div></Card>
+          <Card variant="bordered"><strong>Bordered</strong><div style={{color:'var(--ink-500)',fontSize:13,marginTop:4}}>Hairline, no shadow.</div></Card>
+          <Card variant="pine"><strong>Pine card</strong><div style={{opacity:0.85,fontSize:13,marginTop:4}}>Brand surface.</div></Card>
+        </div>
+      </section>
+      <section>
+        <h3>Badge & Tag</h3>
+        <div className="row">
+          <Badge variant="pine">Verified regular</Badge>
+          <Badge variant="stamp">2 visits to free pour</Badge>
+          <Badge variant="ochre">Founding pick</Badge>
+          <Badge variant="river">Riverside</Badge>
+          <Badge variant="solid-pine">Open now</Badge>
+          <Badge variant="solid-ink">Closed</Badge>
+          <Tag>PERK-NRW-0241</Tag>
+          <Tag variant="pine">NRWB·NY</Tag>
+          <Tag variant="stamp">VERIFIED</Tag>
+        </div>
+      </section>
+      <section>
+        <h3>Inputs & Switch</h3>
+        <div className="grid">
+          <Field label="Phone (staff path)" hint="We text you a one-time link.">
+            <Input type="tel" placeholder="(845) 555-0142"/>
+          </Field>
+          <Field label="Perk name" error="Already in use this season.">
+            <Input defaultValue="The Regular's Pour"/>
+          </Field>
+        </div>
+        <div className="row" style={{marginTop:10}}>
+          <label style={{display:'flex',gap:10,alignItems:'center',fontSize:14}}><Switch checked={on} onChange={setOn}/> Lock-screen surfacing</label>
+        </div>
+      </section>
+      <section>
+        <h3>Tabs</h3>
+        <Tabs tabs={["All","Open","Closed"]} value={tab} onChange={setTab}/>
+      </section>
+      <section>
+        <h3>Stat</h3>
+        <div className="row" style={{gap:32}}>
+          <Stat label="Repeat-visit rate" value="42" suffix="%" delta="+6 pts this week" deltaDirection="up"/>
+          <Stat label="Regulars this month" value="28"/>
+          <Stat label="Avg visits / regular" value="3.4"/>
+        </div>
+      </section>
+      <section>
+        <h3>Notice & Row</h3>
+        <div className="stack">
+          <Notice tone="pine" icon={<Icon name="check"/>} title="Pass added">Your Upper Delaware Passport is in your wallet.</Notice>
+          <Notice tone="ochre" icon={<Icon name="alert"/>} title="Heads up">You changed the perk threshold from 5 to 6 visits.</Notice>
+          <Card variant="bordered" style={{padding:0}}>
+            <Row title="Boomer's Diner" sub="2 visits to a regular's coffee" trailing={<Icon name="chevron-right"/>}/>
+            <Row title="The Heron" sub="Narrowsburg — verified regulars +12 this week" trailing={<Icon name="chevron-right"/>}/>
+            <Row title="Catskill Outfitters" sub="Eldred — new to Good Local" trailing={<Icon name="chevron-right"/>}/>
+          </Card>
+        </div>
+      </section>
+    </div>
+  )
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body></html>

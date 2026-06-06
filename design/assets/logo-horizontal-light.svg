@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 88" fill="none">
+  <g transform="translate(8 4)">
+    <circle cx="40" cy="40" r="38" fill="none" stroke="#F6F1E4" stroke-width="2"></circle>
+    <circle cx="40" cy="40" r="32" fill="none" stroke="#F6F1E4" stroke-width="1"></circle>
+    <defs>
+      <path id="seal-top-l" d="M 12 40 A 28 28 0 0 1 68 40" fill="none"></path>
+      <path id="seal-bot-l" d="M 14 40 A 26 26 0 0 0 66 40" fill="none"></path>
+    </defs>
+    <text font-family="Public Sans, sans-serif" font-size="6" font-weight="700" letter-spacing="1.4" fill="#F6F1E4">
+      <textPath href="#seal-top-l" startOffset="50%" text-anchor="middle">UPPER · DELAWARE</textPath>
+    </text>
+    <text font-family="Public Sans, sans-serif" font-size="6" font-weight="600" letter-spacing="1.2" fill="#F6F1E4">
+      <textPath href="#seal-bot-l" startOffset="50%" text-anchor="middle">EST · 2026</textPath>
+    </text>
+    <g transform="translate(40 42)">
+      <path d="M -16 6 L -8 -8 L -2 0 L 4 -10 L 12 4 L 16 6 Z" fill="#F6F1E4"></path>
+      <path d="M -18 10 Q -10 7 -2 10 T 18 10" stroke="#F6F1E4" stroke-width="1.5" fill="none" stroke-linecap="round"></path>
+    </g>
+    <circle cx="40" cy="6" r="0.9" fill="#F6F1E4"></circle>
+    <circle cx="40" cy="74" r="0.9" fill="#F6F1E4"></circle>
+    <circle cx="6" cy="40" r="0.9" fill="#F6F1E4"></circle>
+    <circle cx="74" cy="40" r="0.9" fill="#F6F1E4"></circle>
+  </g>
+  <g transform="translate(112 0)">
+    <text x="0" y="46" font-family="Newsreader, serif" font-size="44" font-weight="600" fill="#F6F1E4" style="font-variation-settings: &#39;opsz&#39; 48;">Good Local</text>
+    <text x="2" y="72" font-family="Public Sans, sans-serif" font-size="11" font-weight="600" letter-spacing="2.4" fill="#F6F1E4" opacity="0.85">UPPER  DELAWARE  PASSPORT</text>
+  </g>
+</svg>

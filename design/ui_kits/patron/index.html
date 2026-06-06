@@ -1,0 +1,188 @@
+<!-- @dsCard group="Patron App" viewport="700x780" name="Patron mobile app" subtitle="Wallet-first passport: check-in, home, discover, business detail" -->
+<!-- @startingPoint section="Patron App" subtitle="Wallet-first passport — full patron flow" viewport="900x900" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Good Local — Patron app</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    html, body { margin: 0; padding: 0; background: var(--paper-200); height: 100%; }
+    body {
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 28px;
+      padding: 28px;
+      box-sizing: border-box;
+    }
+    aside {
+      display: flex; flex-direction: column; gap: 18px;
+      padding: 22px 18px;
+      background: var(--paper-100);
+      border-radius: 14px;
+      box-shadow: var(--shadow-paper);
+      height: fit-content;
+      position: sticky; top: 28px;
+    }
+    aside h1 { font-family: var(--font-display); font-size: 22px; font-weight: 600; margin: 0; line-height: 1.15; letter-spacing: -0.012em; }
+    aside .eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-500); }
+    aside .desc { font-size: 13px; color: var(--ink-700); line-height: 1.45; }
+    .nav { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+    .nav button {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 8px;
+      background: transparent; border: 0; cursor: pointer;
+      font: 500 14px/1 var(--font-body); color: var(--ink-700); text-align: left;
+      width: 100%;
+    }
+    .nav button > span:first-child { flex: 1; white-space: nowrap; }
+    .nav button.active { background: var(--pine-700); color: var(--paper-100); }
+    .nav button:not(.active):hover { background: var(--paper-200); }
+    .nav .kbd { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--ink-400); }
+    .nav button.active .kbd { color: var(--paper-300); }
+    .stage {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 24px 16px;
+    }
+    .device {
+      width: 390px; height: 844px;
+      background: var(--paper-50);
+      border-radius: 48px;
+      box-shadow:
+        0 0 0 12px var(--ink-1000),
+        0 24px 60px rgb(14 36 25 / 0.22),
+        0 4px 12px rgb(26 22 18 / 0.12);
+      position: relative;
+      overflow: hidden;
+    }
+    .device::after {
+      content: "";
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      width: 122px; height: 30px; background: var(--ink-1000); border-radius: 16px;
+      z-index: 100;
+    }
+    .device > .inner {
+      width: 100%; height: 100%; overflow: hidden;
+      position: relative;
+    }
+    .status-bar {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 48px;
+      display: flex; align-items: flex-end; justify-content: space-between;
+      padding: 0 28px 6px;
+      font-family: var(--font-body); font-size: 14px; font-weight: 600;
+      color: var(--ink-1000); pointer-events: none; z-index: 50;
+    }
+    .status-bar .right { display: flex; gap: 6px; align-items: center; }
+    .app-mount {
+      position: absolute; inset: 48px 0 0 0;
+      overflow: hidden;
+    }
+    .stage-caption {
+      margin-top: 16px;
+      font-family: var(--font-mono); font-size: 11px; color: var(--ink-500);
+      letter-spacing: 0.06em;
+    }
+    .scenarios {
+      display: flex; flex-direction: column; gap: 6px; margin-top: 18px;
+      padding-top: 14px; border-top: 1px dashed var(--ink-200);
+    }
+    .scenarios .eyebrow { margin-bottom: 4px; }
+    .scenarios button {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+      padding: 10px 12px; border-radius: 6px; background: transparent; border: 1px solid var(--ink-200);
+      text-align: left; cursor: pointer; font-family: var(--font-body); width: 100%;
+    }
+    .scenarios button:hover { background: var(--paper-200); }
+    .scenarios .title { font-size: 13px; font-weight: 600; color: var(--ink-1000); }
+    .scenarios .sub { font-size: 11px; color: var(--ink-500); }
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+  <aside>
+    <div>
+      <div class="eyebrow">Patron mobile-web</div>
+      <h1>Upper Delaware Passport</h1>
+      <p class="desc">Add at the register. Stamps stay in your wallet. No app to download.</p>
+    </div>
+    <div class="nav" id="nav">
+      <button data-tab="home" class="active"><span>Passport home</span><span class="kbd">1</span></button>
+      <button data-tab="discover"><span>Discover</span><span class="kbd">2</span></button>
+      <button data-tab="checkin"><span>Check-in flow</span><span class="kbd">3</span></button>
+      <button data-tab="me"><span>Me</span><span class="kbd">4</span></button>
+    </div>
+    <div class="scenarios">
+      <div class="eyebrow">Hot scenarios</div>
+      <button data-scenario="just-stamped">
+        <span class="title">Just-stamped + wallet add</span>
+        <span class="sub">Tap the camera in screen 3 to run it.</span>
+      </button>
+      <button data-scenario="business-detail">
+        <span class="title">Business detail — The Heron</span>
+        <span class="sub">Owner note + perk progress.</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="device">
+      <div class="inner">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="right">
+            <svg width="18" height="11" viewBox="0 0 18 11" fill="currentColor"><rect x="0" y="6" width="3" height="5" rx="0.5"/><rect x="5" y="4" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="9" rx="0.5"/><rect x="15" y="0" width="3" height="11" rx="0.5"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1 5.5 A 6 6 0 0 1 15 5.5"/><path d="M3.5 7 A 3.5 3.5 0 0 1 12.5 7"/><circle cx="8" cy="8.5" r="1" fill="currentColor"/></svg>
+            <svg width="24" height="11" viewBox="0 0 24 11" fill="none" stroke="currentColor" stroke-width="1"><rect x="1" y="1" width="20" height="9" rx="2"/><rect x="3" y="3" width="14" height="5" rx="0.5" fill="currentColor"/><path d="M22 4 v3" stroke-width="1.5"/></svg>
+          </span>
+        </div>
+        <div class="app-mount" id="app-mount"></div>
+      </div>
+    </div>
+    <div class="stage-caption">390 × 844 · iPhone 14 · Safari mobile-web</div>
+  </main>
+
+  <script type="text/babel" src="PatronApp.jsx"></script>
+  <script type="text/babel" data-presets="env,react">
+    const root = ReactDOM.createRoot(document.getElementById("app-mount"));
+
+    function render(tab) {
+      root.render(<PatronApp key={tab} initialTab={tab} />);
+    }
+    render("home");
+
+    function setActive(tab) {
+      document.querySelectorAll('#nav button').forEach((b) => {
+        b.classList.toggle('active', b.dataset.tab === tab);
+      });
+    }
+
+    document.querySelectorAll('#nav button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setActive(btn.dataset.tab);
+        render(btn.dataset.tab);
+      });
+    });
+    document.querySelector('[data-scenario="just-stamped"]').addEventListener('click', () => {
+      setActive('checkin');
+      render('checkin');
+    });
+    document.querySelector('[data-scenario="business-detail"]').addEventListener('click', () => {
+      setActive('discover');
+      render('discover');
+    });
+    document.addEventListener('keydown', (e) => {
+      const map = { '1': 'home', '2': 'discover', '3': 'checkin', '4': 'me' };
+      const t = map[e.key];
+      if (t) { setActive(t); render(t); }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+/* ============================================================
+   Good Vibes Coding — Colors & Type Foundations
+   Copy-paste this file into any design to inherit the brand.
+   OKLCH for perceptual uniformity. Fluid type via clamp().
+   ============================================================ */
+
+/* ---------- Fonts (self-hosted WOFF2) ---------- */
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('fonts/dmsans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('fonts/dmsans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: italic;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('fonts/dmsans-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: italic;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('fonts/dmsans-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'DM Serif Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/dmserif-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'DM Serif Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/dmserif-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'DM Serif Display';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/dmserif-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  /* ---------- Color primitives (OKLCH) ---------- */
+  --gvc-cream:          oklch(97.5% 0.005 80);   /* warm cream white — main bg */
+  --gvc-cream-alt:      oklch(95%   0.008 80);   /* warm off-white — cards/surfaces */
+  --gvc-espresso:       oklch(25%   0.015 60);   /* dark warm — inverted sections */
+  --gvc-ink:            oklch(20%   0.02  60);   /* warm near-black — text */
+  --gvc-ink-muted:      oklch(42%   0.015 60);   /* muted body copy (AA) */
+  --gvc-ink-soft:       oklch(55%   0.01  60);   /* subtle labels */
+  --gvc-border:         oklch(88%   0.01  80);   /* hairline warm border */
+
+  /* Teal — primary: growth / tech / positivity */
+  --gvc-teal:           oklch(55% 0.14 175);
+  --gvc-teal-light:     oklch(92% 0.04 175);
+  --gvc-teal-dark:      oklch(40% 0.12 175);
+
+  /* Amber — accent: warmth / energy / approachability (used on dark) */
+  --gvc-amber:          oklch(72% 0.17 70);
+  --gvc-amber-light:    oklch(92% 0.06 70);
+  --gvc-amber-dark:     oklch(58% 0.16 70);
+
+  /* ---------- Semantic color vars ---------- */
+  --bg:                 var(--gvc-cream);
+  --bg-surface:         var(--gvc-cream-alt);
+  --bg-inverted:        var(--gvc-espresso);
+  --fg1:                var(--gvc-ink);           /* primary text */
+  --fg2:                var(--gvc-ink-muted);     /* secondary text */
+  --fg3:                var(--gvc-ink-soft);      /* tertiary / labels */
+  --fg-on-inverted:     oklch(90% 0.02 80);       /* body text on dark */
+  --fg-on-inverted-soft:oklch(70% 0.01 80);
+  --border:             var(--gvc-border);
+  --primary:            var(--gvc-teal);
+  --primary-hover:      var(--gvc-teal-dark);
+  --primary-tint:       var(--gvc-teal-light);
+  --accent:             var(--gvc-amber);
+  --accent-hover:       var(--gvc-amber-dark);
+  --accent-tint:        var(--gvc-amber-light);
+
+  /* Hero code-block syntax palette (lives only on dark card) */
+  --code-bg:            oklch(18% 0.015 260);
+  --code-keyword:       oklch(75% 0.15 310);
+  --code-var:           oklch(80% 0.12 200);
+  --code-prop:          oklch(80% 0.10 80);
+  --code-string:        oklch(75% 0.15 155);
+
+  /* Focus / selection */
+  --focus-ring:         var(--gvc-teal);
+  --selection-bg:       oklch(55% 0.14 175 / 0.2);
+
+  /* ---------- Typography ---------- */
+  --serif-display:      'DM Serif Display', Georgia, 'Times New Roman', serif;
+  --sans:               'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --mono:               'DM Sans', 'SF Mono', 'Fira Code', ui-monospace, monospace;
+
+  /* Fluid scale — matches the landing page exactly */
+  --text-xs:   clamp(0.75rem,  0.7rem  + 0.15vw, 0.875rem);
+  --text-sm:   clamp(0.875rem, 0.8rem  + 0.2vw,  1rem);
+  --text-base: clamp(1rem,     0.92rem + 0.25vw, 1.125rem);
+  --text-lg:   clamp(1.125rem, 1rem    + 0.4vw,  1.375rem);
+  --text-xl:   clamp(1.375rem, 1.1rem  + 0.8vw,  1.875rem);
+  --text-2xl:  clamp(1.75rem,  1.3rem  + 1.2vw,  2.75rem);
+  --text-3xl:  clamp(2.25rem,  1.5rem  + 2vw,    3.75rem);
+  --text-hero: clamp(2.75rem,  1.8rem  + 3vw,    5rem);
+
+  /* ---------- Spacing (fluid) ---------- */
+  --space-xs:      clamp(0.25rem, 0.15rem + 0.3vw, 0.5rem);
+  --space-sm:      clamp(0.5rem,  0.3rem  + 0.5vw, 1rem);
+  --space-md:      clamp(1rem,    0.6rem  + 1vw,   1.75rem);
+  --space-lg:      clamp(1.5rem,  1rem    + 1.5vw, 3rem);
+  --space-xl:      clamp(2.5rem,  1.5rem  + 3vw,   5rem);
+  --space-2xl:     clamp(4rem,    2.5rem  + 4vw,   8rem);
+  --space-section: clamp(5rem,    3rem    + 5vw,  10rem);
+
+  /* ---------- Radii ---------- */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+  --radius-pill: 100vw;
+
+  /* ---------- Shadows ---------- */
+  --shadow-sm:   0 1px 3px  oklch(0% 0 0 / 0.04), 0 1px 2px  oklch(0% 0 0 / 0.02);
+  --shadow-md:   0 4px 16px oklch(0% 0 0 / 0.06), 0 2px 4px  oklch(0% 0 0 / 0.03);
+  --shadow-lg:   0 12px 40px oklch(0% 0 0 / 0.08), 0 4px 12px oklch(0% 0 0 / 0.04);
+  --shadow-glow: 0 0 40px oklch(55% 0.14 175 / 0.15);
+  --shadow-dark-lg: 0 8px 32px oklch(0% 0 0 / 0.3);
+
+  /* ---------- Motion ---------- */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 0.15s;
+  --duration-base: 0.3s;
+  --duration-slow: 0.6s;
+
+  /* ---------- Layout ---------- */
+  --container-max: 72rem;
+  --container-pad: clamp(1.25rem, 1rem + 1vw, 3rem);
+}
+
+/* ---------- Semantic element rules ---------- */
+body {
+  font-family: var(--sans);
+  font-size: var(--text-base);
+  line-height: 1.65;
+  color: var(--fg1);
+  background-color: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--serif-display);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--fg1);
+  text-wrap: balance;
+}
+/* Italic-for-emphasis is the hero typographic move: <em> inside a heading
+   turns teal and stays the same weight. */
+h1 em, h2 em, h3 em {
+  font-style: italic;
+  color: var(--primary);
+}
+
+h1 { font-size: var(--text-3xl); }
+h2 { font-size: var(--text-2xl); }
+h3 { font-size: var(--text-xl); font-family: var(--sans); font-weight: 600; letter-spacing: 0; }
+h4 { font-size: var(--text-lg); font-family: var(--sans); font-weight: 600; letter-spacing: 0; }
+
+.display-hero { font-size: var(--text-hero); font-family: var(--serif-display); line-height: 1.1; }
+
+p {
+  font-size: var(--text-base);
+  line-height: 1.65;
+  color: var(--fg1);
+  text-wrap: pretty;
+}
+.subtitle, p.subtitle {
+  font-size: var(--text-lg);
+  color: var(--fg2);
+  line-height: 1.6;
+}
+small, .text-sm { font-size: var(--text-sm); }
+
+/* Eyebrow / section label — all-caps, primary-dark teal. The brand's signature
+   'kicker' above every headline. */
+.eyebrow, .section-label {
+  font-family: var(--sans);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--gvc-teal-dark);
+}
+
+code, pre, .mono {
+  font-family: var(--mono);
+  font-size: 0.95em;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+a:hover { color: var(--primary-hover); }
+
+::selection { background: var(--selection-bg); }
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: var(--radius-sm); }

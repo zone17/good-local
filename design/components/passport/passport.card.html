@@ -1,0 +1,98 @@
+<!-- @dsCard group="Components" viewport="1100x620" name="Passport primitives" subtitle="Stamp, StampGrid, WalletPass, ProgressMeter, SealMark" -->
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body{margin:0;padding:24px;background:var(--paper-100);font-family:var(--font-body);color:var(--ink-1000)}
+  section{margin-bottom:22px}
+  h3{margin:0 0 10px;font:600 11px/1 var(--font-body);text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-500)}
+  .row{display:flex;flex-wrap:wrap;gap:18px;align-items:center}
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Stamp, StampGrid, WalletPass, ProgressMeter, SealMark, Card } = window.GoodLocalDesignSystem_db344c;
+
+function App(){
+  return (
+    <div>
+      <section>
+        <h3>Stamp — round (default)</h3>
+        <div className="row">
+          <Stamp state="earned" label="HRN" date="06·14" size={64}/>
+          <Stamp state="earned" label="BMR" date="06·14" size={64} just rotate={3}/>
+          <Stamp state="earned" label="LRM" date="06·12" size={64} rotate={-4}/>
+          <Stamp state="empty" size={64}/>
+          <Stamp state="locked" size={64}/>
+          <Stamp state="earned" label="HRN" date="06·14·2026" town="NARROWSBURG · NY" size={140}/>
+        </div>
+      </section>
+      <section>
+        <h3>StampGrid — perk progress</h3>
+        <StampGrid
+          total={5}
+          columns={5}
+          stamps={[
+            { label:"BMR", date:"06·07", rotate:-4 },
+            { label:"BMR", date:"06·12", rotate:2 },
+            { label:"BMR", date:"06·14", rotate:-2 },
+          ]}
+        />
+      </section>
+      <section>
+        <h3>ProgressMeter</h3>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24}}>
+          <ProgressMeter count={3} total={5} label="The Regular's Pour" remainingLabel="2 visits to go"/>
+          <ProgressMeter count={9} total={12} tone="ochre" label="12-town badge" remainingLabel="3 towns to go"/>
+        </div>
+      </section>
+      <section>
+        <h3>SealMark</h3>
+        <div className="row" style={{gap:24}}>
+          <div style={{color:'var(--pine-700)'}}><SealMark size={96}/></div>
+          <div style={{color:'var(--stamp-700)'}}><SealMark size={72} topLine="NARROWSBURG · NY" bottomLine="VERIFIED · REGULAR"/></div>
+          <div style={{color:'var(--ink-1000)'}}><SealMark size={64}/></div>
+        </div>
+      </section>
+      <section>
+        <h3>WalletPass — variants</h3>
+        <div className="row" style={{gap:18}}>
+          <WalletPass
+            businessName="The Heron"
+            region="Narrowsburg, NY"
+            count={3} total={5}
+            perkLabel="The Regular's Pour"
+            perkSub="Two more visits, on the house"
+            stampCode="HRN"
+            serial="UDP·NRWB·a7q9" expires="11·2026"
+          />
+          <WalletPass
+            variant="kraft"
+            businessName="Catskill Outfitters"
+            region="Eldred, NY"
+            count={2} total={4}
+            perkLabel="$10 off your next paddle"
+            stampCode="CAT"
+            footer="Lock-screen on, 200ft from store"
+          />
+          <WalletPass
+            variant="river"
+            businessName="Loom Room"
+            region="Narrowsburg, NY"
+            count={4} total={5}
+            perkLabel="The regular's shelf"
+            stampCode="LRM"
+          />
+        </div>
+      </section>
+    </div>
+  )
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body></html>

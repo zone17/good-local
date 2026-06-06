@@ -1,0 +1,48 @@
+/* Shared specimen-card helpers. Cards link both ../styles.css
+   and this file. Keep additive — never override tokens. */
+
+.card-row {
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  height: 96px;
+}
+
+.swatch {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.swatch .name {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 9px;
+}
+
+.swatch .hex {
+  font-weight: 500;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+.card-shell {
+  margin: 0;
+  padding: 18px 22px;
+  background: var(--paper-50);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-shell .label {
+  font: var(--weight-semibold) var(--text-xs) / 1 var(--font-body);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--text-tertiary);
+}

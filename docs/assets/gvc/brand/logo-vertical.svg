@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <rect x="200" y="60" width="200" height="200" rx="40" fill="#0ca18d"></rect>
+  <g fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="280,146 267,160 280,174"></polyline>
+    <line x1="302" y1="130" x2="298" y2="190"></line>
+    <polyline points="320,146 333,160 320,174"></polyline>
+  </g>
+  <text x="300" y="380" text-anchor="middle" font-family="&#39;DM Serif Display&#39;,Georgia,serif" font-size="72" fill="#2a211a">Good Vibes</text>
+  <text x="300" y="460" text-anchor="middle" font-family="&#39;DM Serif Display&#39;,Georgia,serif" font-style="italic" font-size="72" fill="#0ca18d">Coding</text>
+</svg>
