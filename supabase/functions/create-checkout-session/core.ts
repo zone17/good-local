@@ -23,16 +23,20 @@ export class CheckoutError extends Error {
 }
 
 export interface CheckoutDeps {
-  // service-role supabase client (structural subset).
+  // service-role supabase client (structural subset — data tables only; this
+  // core deliberately has NO auth.admin surface, see authedUser below).
   db: {
     from(table: string): any;
-    auth: {
-      admin: {
-        createUser: (attrs: Record<string, unknown>) => Promise<{ data: any; error: any }>;
-        listUsers: () => Promise<{ data: any; error: any }>;
-      };
-    };
   };
+  /**
+   * The already-authenticated caller, resolved by index.ts from the request's
+   * Authorization JWT via auth.getUser(). SECURITY (review 2026-06-06):
+   * unauthenticated callers could previously squat any email via
+   * admin.createUser({ email_confirm: true }) — pre-account-takeover. The
+   * client flow signs up first (Signup.jsx -> signUpOwner), so the edge fn
+   * now REQUIRES that session and never creates or confirms users itself.
+   */
+  authedUser: { id: string; email: string | null };
   fetchImpl: typeof fetch;
   env: {
     STRIPE_SECRET_KEY: string;
@@ -109,22 +113,15 @@ export async function buildCheckout(
     .maybeSingle();
   if (dup) throw new CheckoutError("DUPLICATE_PENDING");
 
-  // ---- ensure owner auth user ----
-  let ownerId: string | undefined;
-  {
-    const { data: list } = await db.auth.admin.listUsers();
-    ownerId = list?.users?.find(
-      (u: any) => (u.email ?? "").toLowerCase() === req.owner_email.toLowerCase(),
-    )?.id;
+  // ---- owner = the authenticated caller, full stop ----
+  // The caller proved control of this email by signing up/in before checkout;
+  // we only assert the request matches the session it rides on.
+  const { authedUser } = deps;
+  if (!authedUser?.id) throw new CheckoutError("UNAUTHENTICATED");
+  if ((authedUser.email ?? "").toLowerCase() !== req.owner_email.toLowerCase()) {
+    throw new CheckoutError("FORBIDDEN", "owner_email does not match session");
   }
-  if (!ownerId) {
-    const { data: created, error } = await db.auth.admin.createUser({
-      email: req.owner_email,
-      email_confirm: true,
-    });
-    if (error || !created?.user) throw new CheckoutError("VALIDATION", "owner_email");
-    ownerId = created.user.id;
-  }
+  const ownerId = authedUser.id;
 
   // ---- slug + stamp_code (dedupe) ----
   let slug = kebab(req.business_name) || "business";

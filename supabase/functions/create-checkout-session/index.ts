@@ -34,9 +34,25 @@ Deno.serve(async (req: Request) => {
     { auth: { persistSession: false } },
   );
 
+  // SECURITY (review 2026-06-06): the caller MUST be authenticated — the owner
+  // signs up before checkout (Signup.jsx). Resolve the session user from the
+  // forwarded JWT; the core asserts it matches owner_email and never creates
+  // or auto-confirms users itself (pre-account-takeover fix).
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const userClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { auth: { persistSession: false }, global: { headers: { Authorization: authHeader } } },
+  );
+  const { data: userData, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !userData?.user) {
+    return json({ error: { code: "UNAUTHENTICATED", message: "sign in before checkout" } }, 401);
+  }
+
   try {
     const result = await buildCheckout(body as never, {
       db,
+      authedUser: { id: userData.user.id, email: userData.user.email ?? null },
       fetchImpl: fetch,
       env: {
         STRIPE_SECRET_KEY: Deno.env.get("STRIPE_SECRET_KEY") ?? "sk_test_local",
@@ -47,7 +63,12 @@ Deno.serve(async (req: Request) => {
     return json(result, 200);
   } catch (err) {
     if (err instanceof CheckoutError) {
-      const status = err.code === "STRIPE_ERROR" ? 502 : err.code === "DUPLICATE_PENDING" ? 409 : 422;
+      const status =
+        err.code === "STRIPE_ERROR" ? 502
+        : err.code === "DUPLICATE_PENDING" ? 409
+        : err.code === "UNAUTHENTICATED" ? 401
+        : err.code === "FORBIDDEN" ? 403
+        : 422;
       return json({ error: { code: err.code, message: err.message } }, status);
     }
     return json({ error: { code: "VALIDATION", message: String(err) } }, 500);

@@ -102,7 +102,7 @@ Deno.serve(async (req: Request) => {
   // local/dev and tests can finish the claim without an SMS round-trip.
   console.log(`[claim-passport] OTP for ${phone}: ${code} (no messaging provider configured)`);
   const payload: Record<string, unknown> = { sent: true };
-  if (devOtpAllowed(environment)) {
+  if (devOtpAllowed(environment, Deno.env.get("EXPOSE_DEV_OTP"))) {
     payload.dev_otp = code; // dev/local only — never returned in production
   }
   return json(payload, 200);

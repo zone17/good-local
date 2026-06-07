@@ -14,7 +14,18 @@ export function isE164(phone: unknown): phone is string {
   return typeof phone === "string" && /^\+[1-9]\d{1,14}$/.test(phone);
 }
 
-/** Whether OTP delivery should expose the dev code (never in production). */
-export function devOtpAllowed(environment: string | undefined): boolean {
-  return (environment ?? "development") !== "production";
+/**
+ * Whether OTP delivery may expose the dev code in the HTTP response.
+ * FAIL-CLOSED (security review 2026-06-06): requires BOTH an explicitly
+ * non-production environment AND the dedicated EXPOSE_DEV_OTP=1 opt-in.
+ * An unset environment is treated as production. Real deployments deliver
+ * OTPs only via the messaging provider; local dev opts in deliberately.
+ */
+export function devOtpAllowed(
+  environment: string | undefined,
+  exposeFlag: string | undefined,
+): boolean {
+  const env = environment ?? "production"; // unset = assume production
+  const envIsLocal = env === "development" || env === "local";
+  return envIsLocal && exposeFlag === "1";
 }
