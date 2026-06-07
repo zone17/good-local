@@ -79,6 +79,21 @@ export async function signInOwner(email, password) {
 }
 
 /**
+ * Create a business-owner auth account (email + password) at signup
+ * (contracts §1.1 owner; US1 T021). The business row itself is created
+ * `pending` by the create-checkout-session edge function via the service
+ * role — this only establishes the owner identity.
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<import("@supabase/supabase-js").Session | null>}
+ */
+export async function signUpOwner(email, password) {
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) throw error;
+  return data.session;
+}
+
+/**
  * End the current session (owner/admin sign-out; patrons stay anonymous-first).
  * @returns {Promise<void>}
  */

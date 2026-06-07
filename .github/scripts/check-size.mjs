@@ -1,8 +1,11 @@
-// Enforces the SC-008 bundle budgets against app/dist.
-//   - check-in entry JS (files matching /checkin/i): <= 60 KB gzipped
-//   - main entry JS (everything else): <= 130 KB gzipped
-// Prints SKIP when an entry pattern is absent (the checkin.html entry may not
-// exist yet). Fails (exit 1) only when a present entry exceeds its budget.
+// Enforces the SC-008 bundle budgets against app/dist by measuring each HTML
+// entry's ACTUAL JavaScript graph (the entry chunk + every shared chunk it
+// loads), not a filename heuristic. This counts the React vendor chunk against
+// the check-in entry honestly (R7).
+//   - check-in entry (checkin.html): <= 60 KB gzipped JS
+//   - main entry (index.html):       <= 130 KB gzipped JS
+// Prints SKIP when an entry's HTML is absent. Fails (exit 1) only when a present
+// entry exceeds its budget.
 
 import { readdir, readFile, stat } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
@@ -12,77 +15,72 @@ const CHECKIN_BUDGET = 61440; // 60 KB
 const MAIN_BUDGET = 133120; // 130 KB
 
 const distDir = "app/dist";
-const assetsDir = join(distDir, "assets");
-
-async function listJs(dir) {
-  let entries;
-  try {
-    entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return [];
-  }
-  const out = [];
-  for (const e of entries) {
-    const full = join(dir, e.name);
-    if (e.isDirectory()) {
-      out.push(...(await listJs(full)));
-    } else if (e.name.endsWith(".js")) {
-      out.push(full);
-    }
-  }
-  return out;
-}
-
-async function gzipSize(file) {
-  const buf = await readFile(file);
-  return gzipSync(buf).length;
-}
 
 function kb(n) {
   return `${(n / 1024).toFixed(1)} KB`;
 }
 
-const files = [...(await listJs(assetsDir)), ...(await listJs(distDir))]
-  .filter((f, i, a) => a.indexOf(f) === i);
-
-if (files.length === 0) {
-  try {
-    await stat(distDir);
-    console.log(`No JS assets found under ${distDir} — nothing to measure.`);
-  } catch {
-    console.error(`Build output ${distDir} not found. Run the app build first.`);
-    process.exit(1);
-  }
+async function gzipSize(file) {
+  return gzipSync(await readFile(file)).length;
 }
 
-const checkinFiles = files.filter((f) => /checkin/i.test(f));
-const mainFiles = files.filter((f) => !/checkin/i.test(f));
+// Extract the <script type="module" src> + modulepreload JS that an HTML entry
+// pulls. Vite emits the entry script plus <link rel="modulepreload"> for each
+// shared chunk in the entry's import graph, so this captures the true payload.
+async function entryJs(htmlPath) {
+  let html;
+  try {
+    html = await readFile(htmlPath, "utf8");
+  } catch {
+    return null; // entry absent
+  }
+  const refs = new Set();
+  const scriptRe = /<script[^>]+src="([^"]+\.js)"/g;
+  const preloadRe = /<link[^>]+rel="modulepreload"[^>]+href="([^"]+\.js)"/g;
+  let m;
+  while ((m = scriptRe.exec(html))) refs.add(m[1]);
+  while ((m = preloadRe.exec(html))) refs.add(m[1]);
+  return [...refs].map((r) => join(distDir, r.replace(/^\//, "")));
+}
 
 let failed = false;
 
-async function checkGroup(label, group, budget) {
-  if (group.length === 0) {
-    console.log(`SKIP ${label}: no matching entry in build`);
+async function checkEntry(label, htmlName, budget) {
+  const files = await entryJs(join(distDir, htmlName));
+  if (files === null) {
+    console.log(`SKIP ${label}: ${htmlName} not found in build`);
     return;
   }
   let total = 0;
-  for (const f of group) total += await gzipSize(f);
+  for (const f of files) {
+    try {
+      total += await gzipSize(f);
+    } catch {
+      // referenced file missing — surface it loudly.
+      console.error(`  -> ${label}: referenced asset missing: ${f}`);
+      failed = true;
+    }
+  }
   const ok = total <= budget;
-  const verb = ok ? "OK" : "FAIL";
   console.log(
-    `${verb} ${label}: ${kb(total)} gzipped (budget ${kb(budget)})` +
-      `\n     files: ${group.join(", ")}`,
+    `${ok ? "OK" : "FAIL"} ${label}: ${kb(total)} gzipped (budget ${kb(budget)})` +
+      `\n     files: ${files.join(", ")}`,
   );
   if (!ok) {
     failed = true;
-    console.error(
-      `  -> ${label} exceeds budget by ${kb(total - budget)}.`,
-    );
+    console.error(`  -> ${label} exceeds budget by ${kb(total - budget)}.`);
   }
 }
 
-await checkGroup("check-in entry JS", checkinFiles, CHECKIN_BUDGET);
-await checkGroup("main entry JS", mainFiles, MAIN_BUDGET);
+try {
+  await stat(distDir);
+} catch {
+  console.error(`Build output ${distDir} not found. Run the app build first.`);
+  process.exit(1);
+}
+
+await checkEntry("check-in entry JS", "checkin.html", CHECKIN_BUDGET);
+await checkEntry("main entry JS", "index.html", MAIN_BUDGET);
 
 if (failed) {
   console.error("\nBundle size budget exceeded.");

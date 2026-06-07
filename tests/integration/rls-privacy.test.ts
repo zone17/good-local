@@ -25,7 +25,7 @@ import {
   ensureSeedAuthPasswords,
 } from "./helpers";
 
-const OWNER_B_EMAIL = "owner-b@test";
+const OWNER_B_EMAIL = `owner-b-${crypto.randomUUID().slice(0, 8)}@test`;  // unique per run: repeated runs accumulate auth users
 const OWNER_B_PASSWORD = "test-password-owner-b";
 const BUSINESS_B_STAMP_CODE = "BBB";
 

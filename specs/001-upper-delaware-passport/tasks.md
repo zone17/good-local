@@ -61,19 +61,19 @@ Per plan.md structure: `app/` (frontend, two Vite entries), `supabase/` (migrati
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T016 [P] [US1] Contract tests for `update_business_profile`, `publish_perk`, `update_perk`, `set_perk_active`, `get_register_kit` in `tests/contract/business-program.test.ts`
-- [ ] T017 [P] [US1] Contract test for `stripe-webhook` event handling (checkout.session.completed, subscription.updated/deleted, invoice.payment_failed → dunning → suspended) in `tests/contract/stripe-webhook.test.ts`
+- [x] T016 [P] [US1] Contract tests for `update_business_profile`, `publish_perk`, `update_perk`, `set_perk_active`, `get_register_kit` in `tests/contract/business-program.test.ts`
+- [x] T017 [P] [US1] Contract test for `stripe-webhook` event handling (checkout.session.completed, subscription.updated/deleted, invoice.payment_failed → dunning → suspended) in `tests/contract/stripe-webhook.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T018 [US1] Migration `supabase/migrations/0005_rpc_business.sql`: RPCs `update_business_profile`, `publish_perk`, `update_perk`, `set_perk_active` (threshold edits preserve stamps — FR-011), `get_register_kit`
-- [ ] T019 [P] [US1] Edge function `supabase/functions/create-checkout-session/index.ts`: Stripe Checkout session for $79 founding price (idempotency_key; founding metadata — R4)
-- [ ] T020 [US1] Edge function `supabase/functions/stripe-webhook/index.ts`: signature verification; single writer of `subscriptions`; business status transitions incl. suspension/restore (FR-004)
-- [ ] T021 [P] [US1] Owner signup flow UI `app/src/business/Signup.tsx`: business details + owner identity → checkout redirect → pending-approval state (design components only)
-- [ ] T022 [US1] Wire BusinessApp profile/settings + perk builder to `api.ts` (replace mock reads/writes) in `app/src/business/BusinessApp.jsx` (perk-design guidance text per FR-009)
-- [ ] T023 [US1] Register-kit print page `app/src/business/RegisterKit.tsx` + print stylesheet: current code QR + patron instructions (US Letter, kraft styling per design)
-- [ ] T024 [US1] Winter tier: edge function `supabase/functions/update-subscription-plan/index.ts` (`switch_winter_tier`/`revert_founding_rate`, Nov–Apr window guard) + settings UI wiring in `app/src/business/BusinessApp.jsx`
-- [ ] T025 [US1] Integration test `tests/integration/us1-onboarding.test.ts`: full SC-001 path with Stripe test mode (signup → webhook → admin-approve via seed helper → publish perk → kit payload)
+- [x] T018 [US1] Migration `supabase/migrations/0005_rpc_business.sql`: RPCs `update_business_profile`, `publish_perk`, `update_perk`, `set_perk_active` (threshold edits preserve stamps — FR-011), `get_register_kit`
+- [x] T019 [P] [US1] Edge function `supabase/functions/create-checkout-session/index.ts`: Stripe Checkout session for $79 founding price (idempotency_key; founding metadata — R4)
+- [x] T020 [US1] Edge function `supabase/functions/stripe-webhook/index.ts`: signature verification; single writer of `subscriptions`; business status transitions incl. suspension/restore (FR-004)
+- [x] T021 [P] [US1] Owner signup flow UI `app/src/business/Signup.tsx`: business details + owner identity → checkout redirect → pending-approval state (design components only)
+- [x] T022 [US1] Wire BusinessApp profile/settings + perk builder to `api.ts` (replace mock reads/writes) in `app/src/business/BusinessApp.jsx` (perk-design guidance text per FR-009)
+- [x] T023 [US1] Register-kit print page `app/src/business/RegisterKit.tsx` + print stylesheet: current code QR + patron instructions (US Letter, kraft styling per design)
+- [x] T024 [US1] Winter tier: edge function `supabase/functions/update-subscription-plan/index.ts` (`switch_winter_tier`/`revert_founding_rate`, Nov–Apr window guard) + settings UI wiring in `app/src/business/BusinessApp.jsx`
+- [x] T025 [US1] Integration test `tests/integration/us1-onboarding.test.ts`: full SC-001 path with Stripe test mode (signup → webhook → admin-approve via seed helper → publish perk → kit payload)
 
 **Checkpoint**: US1 fully functional — a paying business with a live standalone program (patron side still mock)
 
@@ -87,19 +87,19 @@ Per plan.md structure: `app/` (frontend, two Vite entries), `supabase/` (migrati
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T026 [P] [US2] Contract tests for `record_check_in` — success shape, `CODE_RETIRED`, `CODE_INVALID`, `DAILY_LIMIT`, `BUSINESS_SUSPENDED`, atomic threshold-crossing — in `tests/contract/record-check-in.test.ts`
-- [ ] T027 [P] [US2] Contract tests for `claim_passport` + `link_device` (anon→claimed merge preserves history) in `tests/contract/identity.test.ts`
+- [x] T026 [P] [US2] Contract tests for `record_check_in` — success shape, `CODE_RETIRED`, `CODE_INVALID`, `DAILY_LIMIT`, `BUSINESS_SUSPENDED`, atomic threshold-crossing — in `tests/contract/record-check-in.test.ts`
+- [x] T027 [P] [US2] Contract tests for `claim_passport` + `link_device` (anon→claimed merge preserves history) in `tests/contract/identity.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Migration `supabase/migrations/0006_rpc_checkin.sql`: `record_check_in` single-transaction RPC (token current/grace validation, daily UNIQUE, attribution write, perk-ready atomicity, steered flag join, first-visit flags) + `link_device` + `staff_check_in` (auditable, rate-limited — FR-016)
-- [ ] T029 [US2] Edge function `supabase/functions/claim-passport/index.ts`: phone OTP claim link (staff path FR-016 + multi-device merge R3), merge as audited operation
-- [ ] T030 [P] [US2] Check-in entry UI `app/src/checkin/` (own bundle via `app/checkin.html`): scan-landing → stamped confirmation (Stamp + ProgressMeter from design) → wallet/claim CTAs; durable-server-record-even-if-UI-fails behavior (Edge Case)
-- [ ] T031 [US2] Staff check-in UI on business surface `app/src/business/StaffCheckIn.tsx` (phone entry → stamp + one-time claim link)
-- [ ] T032 [US2] `PassIssuer` adapter `app/src/lib/pass.ts`: interface (issue/update/revoke) + web-passport default + platform impl stub behind A/B flag (R5); `wallet_pass_instances` write on add
-- [ ] T033 [US2] Trust-model integration tests `tests/integration/trust-model.test.ts` (SC-003): direct stamp insert blocked by CHECK; retired-code check-in absent from all gate views; staff entry produces auditable row; rate-limit enforced per patron not per device
-- [ ] T034 [US2] Playwright timed e2e `tests/e2e/checkin.spec.ts` (SC-002): first-time <60s, returning <10s, throttled network profile
-- [ ] T035 [US2] Enforce check-in entry size budget in CI (size-limit wiring for `checkin.html` bundle; build fails >60KB gz — SC-008)
+- [x] T028 [US2] Migration `supabase/migrations/0006_rpc_checkin.sql`: `record_check_in` single-transaction RPC (token current/grace validation, daily UNIQUE, attribution write, perk-ready atomicity, steered flag join, first-visit flags) + `link_device` + `staff_check_in` (auditable, rate-limited — FR-016)
+- [x] T029 [US2] Edge function `supabase/functions/claim-passport/index.ts`: phone OTP claim link (staff path FR-016 + multi-device merge R3), merge as audited operation
+- [x] T030 [P] [US2] Check-in entry UI `app/src/checkin/` (own bundle via `app/checkin.html`): scan-landing → stamped confirmation (Stamp + ProgressMeter from design) → wallet/claim CTAs; durable-server-record-even-if-UI-fails behavior (Edge Case)
+- [x] T031 [US2] Staff check-in UI on business surface `app/src/business/StaffCheckIn.tsx` (phone entry → stamp + one-time claim link)
+- [x] T032 [US2] `PassIssuer` adapter `app/src/lib/pass.ts`: interface (issue/update/revoke) + web-passport default + platform impl stub behind A/B flag (R5); `wallet_pass_instances` write on add
+- [x] T033 [US2] Trust-model integration tests `tests/integration/trust-model.test.ts` (SC-003): direct stamp insert blocked by CHECK; retired-code check-in absent from all gate views; staff entry produces auditable row; rate-limit enforced per patron not per device
+- [x] T034 [US2] Playwright timed e2e `tests/e2e/checkin.spec.ts` (SC-002): first-time <60s, returning <10s, throttled network profile
+- [x] T035 [US2] Enforce check-in entry size budget in CI (size-limit wiring for `checkin.html` bundle; build fails >60KB gz — SC-008)
 
 **Checkpoint**: 🚦 **June 18 vertical slice** — scan → stamp → wallet demoable end-to-end; launch date holds or slides per the brief
 

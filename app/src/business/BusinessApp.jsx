@@ -12,10 +12,17 @@ import {
   Stamp, StampGrid, WalletPass, ProgressMeter, SealMark,
 } from "../ds.js";
 import { BUSINESS, WEEK, PERKS, REGULARS } from "../data.js";
+import * as api from "../lib/api.js";
+import { useBusiness } from "./useBusiness.js";
+import RegisterKit from "./RegisterKit.jsx";
+
+// Map the design-system perk-kind option values to the contract enum.
+const KIND_TO_ENUM = { status: "status_good", "off-peak": "off_peak_treat", discount: "small_discount" };
 
 // ---- Sidebar -----------------------------------------------
 
-function Sidebar({ view, onChange }) {
+function Sidebar({ view, onChange, business }) {
+  const loggedOut = !business?.id;
   const items = [
     { id: "dashboard", label: "This week",  icon: "trending-up" },
     { id: "perks",     label: "Perks",      icon: "stamp" },
@@ -63,10 +70,18 @@ function Sidebar({ view, onChange }) {
       <div style={{ flex: 1 }}/>
       <Card variant="kraft" style={{ padding: 12 }}>
         <div className="gl-eyebrow">Your plan</div>
-        <div style={{ fontWeight: 600, marginTop: 4 }}>{BUSINESS.plan}</div>
+        <div style={{ fontWeight: 600, marginTop: 4 }}>Founding · $79/mo</div>
         <div style={{ fontSize: 12, color: "var(--ink-700)", marginTop: 4, lineHeight: 1.4 }}>
-          Founding rate locked through 2027. Winter tier opens Nov 1.
+          Founding rate locked. Winter tier opens Nov 1.
         </div>
+        {loggedOut ? (
+          <a href="/business/signup" style={{
+            display: "block", marginTop: 10, fontSize: 12, fontWeight: 600,
+            color: "var(--pine-700)", textDecoration: "underline",
+          }}>
+            Not a member yet? Start your program
+          </a>
+        ) : null}
       </Card>
     </aside>
   );
@@ -245,7 +260,23 @@ function VisitChart() {
 
 // ---- Perks view + builder -----------------------------------
 
-function PerksView({ onNewPerk, openBuilder, onCloseBuilder }) {
+function PerksView({ onNewPerk, openBuilder, onCloseBuilder, business, onChanged }) {
+  const perks = business?.perks ?? PERKS;
+  const [busyId, setBusyId] = useState(null);
+
+  async function toggleActive(perk) {
+    if (!perk.id) return; // mock fallback — no backend id
+    setBusyId(perk.id);
+    try {
+      await api.setPerkActive({ perkId: perk.id, active: !perk.active });
+      onChanged && (await onChanged());
+    } catch (err) {
+      window.alert(err?.message ?? "Could not update the perk.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div style={{ padding: 28, display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -264,8 +295,8 @@ function PerksView({ onNewPerk, openBuilder, onCloseBuilder }) {
       </Notice>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        {PERKS.map((p) => (
-          <Card key={p.id} style={{ padding: 20, position: "relative" }}>
+        {perks.map((p) => (
+          <Card key={p.id ?? p.name} style={{ padding: 20, position: "relative" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
@@ -277,7 +308,12 @@ function PerksView({ onNewPerk, openBuilder, onCloseBuilder }) {
                 </div>
                 <div style={{ fontSize: 13, color: "var(--ink-700)", marginTop: 2 }}>{p.description}</div>
               </div>
-              <IconButton label="Edit"><Icon name="edit" size={18}/></IconButton>
+              <Switch
+                checked={!!p.active}
+                onChange={() => toggleActive(p)}
+                label={p.active ? "Deactivate perk" : "Activate perk"}
+                disabled={!p.id || busyId === p.id}
+              />
             </div>
             {p.active && p.eligible ? (
               <>
@@ -302,16 +338,44 @@ function PerksView({ onNewPerk, openBuilder, onCloseBuilder }) {
         ))}
       </div>
 
-      {openBuilder ? <PerkBuilder onClose={onCloseBuilder}/> : null}
+      {openBuilder ? <PerkBuilder onClose={onCloseBuilder} business={business} onChanged={onChanged}/> : null}
     </div>
   );
 }
 
-function PerkBuilder({ onClose }) {
+function PerkBuilder({ onClose, business, onChanged }) {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [threshold, setThreshold] = useState(5);
   const [kind, setKind] = useState("status");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function publish() {
+    setError(null);
+    if (!business?.id) {
+      // No backend business (mock/demo) — just close, keeping visuals intact.
+      onClose();
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.publishPerk({
+        businessId: business.id,
+        name: name.trim(),
+        description: desc.trim(),
+        threshold,
+        kind: KIND_TO_ENUM[kind] ?? "status_good",
+      });
+      onChanged && (await onChanged());
+      onClose();
+    } catch (err) {
+      setError(err?.code === "VALIDATION"
+        ? "Check the name (≤60), one-line description (≤120), and 3–12 visits."
+        : err?.message ?? "Could not publish the perk.");
+      setBusy(false);
+    }
+  }
 
   const kinds = [
     { value: "status", label: "Status good", hint: "Something only regulars get — a seat, a shelf, a heads-up." },
@@ -396,10 +460,12 @@ function PerkBuilder({ onClose }) {
         </div>
 
         <div style={{ padding: "14px 24px", borderTop: "1px solid var(--ink-100)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 12, color: "var(--ink-500)" }}>This perk costs you nothing until a patron earns it.</span>
+          <span style={{ fontSize: 12, color: error ? "var(--ochre-900)" : "var(--ink-500)" }}>
+            {error ?? "This perk costs you nothing until a patron earns it."}
+          </span>
           <div style={{ display: "flex", gap: 8 }}>
-            <Button variant="ghost" onClick={onClose}>Save as draft</Button>
-            <Button onClick={onClose}>Publish perk</Button>
+            <Button variant="ghost" onClick={onClose} disabled={busy}>Cancel</Button>
+            <Button onClick={publish} disabled={busy}>{busy ? "Publishing…" : "Publish perk"}</Button>
           </div>
         </div>
       </div>
@@ -471,95 +537,71 @@ function RegularsView() {
   );
 }
 
-// ---- QR kit (print preview) ---------------------------------
-
-function QrKit() {
-  return (
-    <div style={{ padding: 28, display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <div>
-          <div className="gl-eyebrow">Register kit</div>
-          <div style={{
-            fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600,
-            letterSpacing: "-0.012em", marginTop: 4,
-          }}>Print your QR card</div>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Button variant="secondary" leadingIcon={<Icon name="share" size={18}/>}>Mail me a printed copy</Button>
-          <Button>Download PDF</Button>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <Card style={{ padding: 20 }}>
-          <div className="gl-eyebrow" style={{ marginBottom: 10 }}>5×7 register card · kraft</div>
-          <div style={{
-            background: "var(--paper-300)", color: "var(--pine-1000)", borderRadius: 8,
-            padding: "26px 22px", aspectRatio: "5/7", display: "flex", flexDirection: "column", justifyContent: "space-between",
-          }}>
-            <div style={{ textAlign: "center" }}>
-              <div className="gl-eyebrow" style={{ color: "var(--pine-700)" }}>{BUSINESS.town}</div>
-              <div style={{
-                fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 600,
-                lineHeight: 1.05, marginTop: 4, letterSpacing: "-0.012em",
-              }}>
-                {BUSINESS.name}
-              </div>
-            </div>
-            <div style={{ display: "grid", placeItems: "center" }}>
-              <div style={{
-                width: 180, height: 180, background: "var(--ink-1000)",
-                display: "grid", placeItems: "center", borderRadius: 6,
-              }}>
-                <div style={{
-                  width: 156, height: 156, background: "var(--paper-100)",
-                  backgroundImage: `
-                    radial-gradient(circle at 10% 10%, var(--ink-1000) 0 2.5%, transparent 2.5%),
-                    radial-gradient(circle at 90% 10%, var(--ink-1000) 0 2.5%, transparent 2.5%),
-                    radial-gradient(circle at 10% 90%, var(--ink-1000) 0 2.5%, transparent 2.5%),
-                    repeating-linear-gradient(90deg, var(--ink-1000) 0 4px, transparent 4px 8px),
-                    repeating-linear-gradient(0deg, var(--ink-1000) 0 4px, transparent 4px 8px)
-                  `,
-                  backgroundSize: "100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%",
-                  imageRendering: "pixelated",
-                }}/>
-              </div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 500, lineHeight: 1.2, letterSpacing: "-0.01em" }}>
-                Earn your first stamp.
-              </div>
-              <div style={{ fontSize: 12, color: "var(--ink-700)", marginTop: 6, lineHeight: 1.4 }}>
-                Hold your camera over the code. No app needed — adds to your wallet.
-              </div>
-              <div style={{ marginTop: 10, color: "var(--pine-700)", display: "grid", placeItems: "center" }}>
-                <SealMark size={36}/>
-              </div>
-            </div>
-          </div>
-        </Card>
-        <Card style={{ padding: 20 }}>
-          <div className="gl-eyebrow">Tips</div>
-          <ul style={{ marginTop: 10, paddingLeft: 18, color: "var(--ink-700)", lineHeight: 1.6, fontSize: 14 }}>
-            <li>Print on kraft cardstock if you can — the brand expects it.</li>
-            <li>Tape it to the side of the register where the hand naturally rests.</li>
-            <li>Replace the kit if it gets wet or torn — your code rotates every 7 days for trust.</li>
-            <li>For patrons who can&apos;t scan: ask their phone number and check them in from this screen.</li>
-          </ul>
-          <Divider dashed/>
-          <Field label="Staff-entered check-in" hint="Send a one-time wallet link.">
-            <Input type="tel" placeholder="(845) 555-0142"/>
-          </Field>
-          <Button block style={{ marginTop: 10 }}>Send link</Button>
-        </Card>
-      </div>
-    </div>
-  );
-}
+// ---- Register kit ── now its own component (T023): app/src/business/RegisterKit.jsx
 
 // ---- Settings view ------------------------------------------
 
-function SettingsView() {
+// Winter tier is selectable only Nov 1 – Apr 30, America/New_York (FR-003).
+function inWinterWindow(now = new Date()) {
+  const m = Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric" })
+      .formatToParts(now).find((p) => p.type === "month").value,
+  );
+  return m >= 11 || m <= 4;
+}
+
+function SettingsView({ business, onChanged }) {
+  const b = business ?? { ...BUSINESS, id: null };
+  const [name, setName] = useState(b.name ?? "");
+  const [code, setCode] = useState(b.code ?? "");
+  const [ownerNote, setOwnerNote] = useState(b.ownerNote ?? "");
+  const [hours, setHours] = useState(b.hours ?? "");
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState(null);
+
+  async function save() {
+    setNotice(null);
+    if (!b.id) { setNotice({ tone: "ochre", text: "Sign in to save changes." }); return; }
+    setBusy(true);
+    try {
+      await api.updateBusinessProfile({
+        businessId: b.id,
+        name: name.trim() || undefined,
+        ownerNote: ownerNote.trim() || undefined,
+        hours: hours.trim() || undefined,
+        stampCode: code.trim() || undefined,
+      });
+      onChanged && (await onChanged());
+      setNotice({ tone: "pine", text: "Saved." });
+    } catch (err) {
+      const msg = err?.code === "STAMP_CODE_TAKEN"
+        ? "That stamp code is taken in your region. Try another."
+        : err?.code === "VALIDATION"
+          ? "Check your entries: code is 3–4 letters; hours ≤120; note ≤280."
+          : err?.message ?? "Could not save.";
+      setNotice({ tone: "ochre", text: msg });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function switchWinter() {
+    setNotice(null);
+    if (!inWinterWindow()) {
+      setNotice({ tone: "ochre", text: "Winter tier opens Nov 1 and runs through Apr 30." });
+      return;
+    }
+    try {
+      await api.switchWinterTier();
+      setNotice({ tone: "pine", text: "Winter tier requested. Your founding rate stays locked." });
+    } catch (err) {
+      const msg = err?.code === "OUTSIDE_WINTER_WINDOW"
+        ? "Winter tier opens Nov 1 and runs through Apr 30."
+        : err?.message ?? "Could not switch tiers.";
+      setNotice({ tone: "ochre", text: msg });
+    }
+  }
+
   return (
     <div style={{ padding: 28, display: "flex", flexDirection: "column", gap: 16, maxWidth: 720 }}>
       <div>
@@ -569,13 +611,18 @@ function SettingsView() {
         </div>
       </div>
 
+      {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
+
       <Card>
         <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>Business profile</h3>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Business name"><Input defaultValue={BUSINESS.name}/></Field>
-          <Field label="Town"><Input defaultValue={BUSINESS.town}/></Field>
-          <Field label="Owner name"><Input defaultValue={BUSINESS.ownerName}/></Field>
-          <Field label="Business code (4-letter)" hint="Shown on patron stamps."><Input defaultValue={BUSINESS.code}/></Field>
+          <Field label="Business name"><Input value={name} onChange={(e) => setName(e.target.value)}/></Field>
+          <Field label="Hours" hint="Shown to patrons."><Input value={hours} onChange={(e) => setHours(e.target.value)}/></Field>
+          <Field label="Owner note" hint="A line patrons see on your page."><Input value={ownerNote} onChange={(e) => setOwnerNote(e.target.value)}/></Field>
+          <Field label="Business code (3–4 letters)" hint="Shown on patron stamps."><Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}/></Field>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <Button size="sm" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save profile"}</Button>
         </div>
       </Card>
 
@@ -583,10 +630,10 @@ function SettingsView() {
         <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>Plan</h3>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
           <div>
-            <div style={{ fontWeight: 600 }}>{BUSINESS.plan}</div>
-            <div style={{ fontSize: 13, color: "var(--ink-500)" }}>Joined {BUSINESS.joined}.</div>
+            <div style={{ fontWeight: 600 }}>Founding · $79/mo</div>
+            <div style={{ fontSize: 13, color: "var(--ink-500)" }}>Founding rate locked. Winter tier opens Nov 1.</div>
           </div>
-          <Button variant="secondary" size="sm">Switch to winter tier ($49/mo)</Button>
+          <Button variant="secondary" size="sm" onClick={switchWinter}>Switch to winter tier ($49/mo)</Button>
         </div>
       </Card>
 
@@ -610,17 +657,18 @@ function SettingsView() {
 function BusinessApp() {
   const [view, setView] = useState("dashboard");
   const [builderOpen, setBuilderOpen] = useState(false);
+  const { business, reload } = useBusiness();
 
   let body;
   if (view === "dashboard") body = <Dashboard/>;
-  else if (view === "perks") body = <PerksView onNewPerk={()=>setBuilderOpen(true)} openBuilder={builderOpen} onCloseBuilder={()=>setBuilderOpen(false)}/>;
+  else if (view === "perks") body = <PerksView onNewPerk={()=>setBuilderOpen(true)} openBuilder={builderOpen} onCloseBuilder={()=>setBuilderOpen(false)} business={business} onChanged={reload}/>;
   else if (view === "regulars") body = <RegularsView/>;
-  else if (view === "qrkit") body = <QrKit/>;
-  else if (view === "settings") body = <SettingsView/>;
+  else if (view === "qrkit") body = <RegisterKit business={business}/>;
+  else if (view === "settings") body = <SettingsView business={business} onChanged={reload}/>;
 
   return (
     <div style={{ display: "flex", height: "100%", background: "var(--paper-50)" }}>
-      <Sidebar view={view} onChange={setView}/>
+      <Sidebar view={view} onChange={setView} business={business}/>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <TopBar onNewPerk={() => { setView("perks"); setBuilderOpen(true); }}/>
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>{body}</div>

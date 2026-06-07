@@ -91,7 +91,7 @@ export function claimPassport({ phone, otp }) {
  * @returns {Promise<{ linked_devices: number }>}
  */
 export function linkDevice({ deviceRef }) {
-  return rpc("link_device", { p_device_ref: deviceRef });
+  return rpc("link_device", { p_device_token: deviceRef });
 }
 
 /**
@@ -154,14 +154,17 @@ export function createCheckoutSession({ businessName, ownerEmail, town, idempote
 
 /**
  * §3.2 update_business_profile — edit profile (RPC). All fields optional (set-state).
- * @param {{ name?: string, town?: string, category?: string, hours?: string,
- *   ownerNote?: string, stampCode?: string }} args
+ * `businessId` is optional; when omitted the RPC resolves to the caller's own
+ * business (RLS-scoped). `town` is a town slug.
+ * @param {{ businessId?: string, name?: string, town?: string, category?: string,
+ *   hours?: string, ownerNote?: string, stampCode?: string }} args
  * @returns {Promise<object>} the updated `business` row.
  */
-export function updateBusinessProfile({ name, town, category, hours, ownerNote, stampCode }) {
+export function updateBusinessProfile({ businessId, name, town, category, hours, ownerNote, stampCode } = {}) {
   return rpc("update_business_profile", {
+    p_business_id: businessId ?? null,
     p_name: name ?? null,
-    p_town: town ?? null,
+    p_town_slug: town ?? null,
     p_category: category ?? null,
     p_hours: hours ?? null,
     p_owner_note: ownerNote ?? null,
@@ -171,12 +174,13 @@ export function updateBusinessProfile({ name, town, category, hours, ownerNote, 
 
 /**
  * §3.3 publish_perk — create a standalone perk (RPC).
- * @param {{ name: string, description: string, threshold: number,
+ * @param {{ businessId: string, name: string, description: string, threshold: number,
  *   kind: 'status_good' | 'off_peak_treat' | 'small_discount' }} args
  * @returns {Promise<object>} the created `perk`.
  */
-export function publishPerk({ name, description, threshold, kind }) {
+export function publishPerk({ businessId, name, description, threshold, kind }) {
   return rpc("publish_perk", {
+    p_business_id: businessId,
     p_name: name,
     p_description: description,
     p_threshold: threshold,
@@ -214,28 +218,32 @@ export function setPerkActive({ perkId, active }) {
 
 /**
  * §3.4 get_register_kit — current code + print payload (RPC, read).
+ * `businessId` is optional; when omitted the RPC resolves to the caller's own
+ * business (RLS-scoped).
+ * @param {{ businessId?: string }} [args]
  * @returns {Promise<{
  *   business_slug: string, code_value: string, code_version: number, qr_url: string,
  *   rotates_at: string, instructions: string, reprint_needed: boolean
  * }>}
  */
-export function getRegisterKit() {
-  return rpc("get_register_kit");
+export function getRegisterKit({ businessId } = {}) {
+  return rpc("get_register_kit", { p_business_id: businessId ?? null });
 }
 
 /**
  * §3.5 staff_check_in — auditable phone-number check-in (RPC).
- * @param {{ phone: string, perkAcknowledged?: boolean }} args  phone in E.164.
+ * The owner's business is the target; pass its id (the RPC verifies ownership).
+ * @param {{ businessId: string, phone: string }} args  phone in E.164.
  * @returns {Promise<{
  *   stamp: { id: string, attribution: string, staff_session: string, stamped_at: string },
  *   perk_progress: { perk_id: string, current: number, threshold: number, ready: boolean },
  *   claim_link_sent: boolean
  * }>}
  */
-export function staffCheckIn({ phone, perkAcknowledged }) {
+export function staffCheckIn({ businessId, phone }) {
   return rpc("staff_check_in", {
+    p_business_id: businessId,
     p_phone: phone,
-    p_perk_acknowledged: perkAcknowledged ?? null,
   });
 }
 
