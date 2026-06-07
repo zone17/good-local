@@ -184,10 +184,17 @@ begin
     when v_delta_regulars < 0 then 'down ' || abs(v_delta_regulars)
     else 'steady'
   end;
-  v_weekly_note := format(
-    '%s regulars came in last week, %s.',
-    v_verified_regulars, v_delta_phrase
-  );
+  -- Plural-correct (FR-031): "1 regular", "2 regulars"; zero gets honest copy.
+  v_weekly_note := case
+    when v_verified_regulars = 0 then
+      'No regulars yet this week — every one starts with a first stamp.'
+    else format(
+      '%s %s came in last week, %s.',
+      v_verified_regulars,
+      case when v_verified_regulars = 1 then 'regular' else 'regulars' end,
+      v_delta_phrase
+    )
+  end;
 
   -- ---- perk performance: redemptions this season vs eligible (ready now) ----
   select coalesce(jsonb_agg(jsonb_build_object(

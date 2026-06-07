@@ -4,12 +4,11 @@
 // Reads the owner's own business and its perks directly via the RLS-scoped
 // supabase client (businesses_owner + perks_owner policies guarantee the
 // caller sees only their own rows — no new verb is added to the contract).
-// When there is no authenticated session, falls back to the data.js mocks in
-// DEV so the demo surface still renders.
+// Real-only (T064): no session -> needsAuth (BusinessApp renders OwnerSignIn);
+// a session with no business rows -> business null (points to /business/signup).
 // ============================================================
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/auth.js";
-import { BUSINESS, PERKS } from "../data.js";
 
 // Shape returned to BusinessApp: { business, perks } using the same fields the
 // screens already read (mock-compatible), plus the real ids needed for writes.
@@ -38,17 +37,11 @@ function fromRow(row) {
   };
 }
 
-const MOCK = {
-  ...BUSINESS,
-  id: null,
-  isMock: true,
-  perks: PERKS.map((p) => ({ ...p, status: p.active ? "active" : "inactive" })),
-};
-
 export function useBusiness() {
   const [business, setBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [needsAuth, setNeedsAuth] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,24 +51,27 @@ export function useBusiness() {
       const session = sessionData?.session ?? null;
 
       if (!session) {
-        // No owner session: demo fallback in DEV; otherwise an explicit null.
-        if (import.meta.env.DEV) {
-          setBusiness(MOCK);
-        } else {
-          setBusiness(null);
-        }
+        setNeedsAuth(true);
+        setBusiness(null);
         return;
       }
+      setNeedsAuth(false);
 
+      // Oldest business = "theirs" when fixtures/dev give an owner several
+      // (mirrors get_business_regulars' resolution); production owners have one.
       const { data, error: qErr } = await supabase
         .from("businesses")
         .select("*, town:towns(name, slug), perks(*)")
-        .single();
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
       if (qErr) throw qErr;
+      // Signed in but no business rows (e.g. a patron session): honest null —
+      // BusinessApp points to /business/signup.
       setBusiness(fromRow(data));
     } catch (err) {
       setError(err);
-      if (import.meta.env.DEV) setBusiness(MOCK);
+      setBusiness(null);
     } finally {
       setLoading(false);
     }
@@ -85,5 +81,5 @@ export function useBusiness() {
     load();
   }, [load]);
 
-  return { business, loading, error, reload: load };
+  return { business, loading, error, needsAuth, reload: load };
 }

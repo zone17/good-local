@@ -287,6 +287,15 @@ export function shareWeeklyNote({ email }) {
 }
 
 /**
+ * get_business_regulars (contract §3.10) — the owner's regulars list.
+ * @returns {Promise<Array<{patron_ref:string, display_name:string|null, visits:number,
+ *   since:string, last_visit:string, trend:'new'|'up'|'steady'}>>}
+ */
+export async function getBusinessRegulars({ businessId } = {}) {
+  return rpc("get_business_regulars", { p_business_id: businessId ?? null });
+}
+
+/**
  * §3.9 switch_winter_tier — move to the $49 winter tier (edge fn, Stripe write).
  * @returns {Promise<{ plan: string, monthly: number, founding_rate_preserved: boolean }>}
  */

@@ -9,10 +9,9 @@
 // Data: api.getRegisterKit (contracts §3.4). Falls back to a placeholder QR
 // payload when there is no backend business (demo).
 // ============================================================
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button, Card, Notice, Divider, Icon, SealMark } from "../ds.js";
 import * as api from "../lib/api.js";
-import { BUSINESS } from "../data.js";
 import StaffCheckIn from "./StaffCheckIn.jsx";
 
 // Print CSS scoped to this surface — US Letter, kraft card centered, chrome hidden.
@@ -32,8 +31,8 @@ export default function RegisterKit({ business }) {
   const [qrDataUrl, setQrDataUrl] = useState(null);
   const mounted = useRef(true);
 
-  const businessName = business?.name ?? BUSINESS.name;
-  const town = business?.town ?? BUSINESS.town;
+  const businessName = business?.name ?? "";
+  const town = business?.town ?? "";
 
   useEffect(() => {
     mounted.current = true;
@@ -48,14 +47,12 @@ export default function RegisterKit({ business }) {
     return () => { mounted.current = false; };
   }, [business?.id]);
 
-  // The honest QR payload: the real qr_url from the kit, or a demo placeholder.
-  const qrUrl = useMemo(() => {
-    if (kit?.qr_url) return kit.qr_url;
-    const slug = business?.slug ?? "the-heron";
-    return `https://goodlocal.app/c/${slug}?k=demo`;
-  }, [kit, business]);
+  // The honest QR payload: only ever the real qr_url from the kit (T064 —
+  // a printed demo code would scan to nothing; better to show "Generating").
+  const qrUrl = kit?.qr_url ?? null;
 
   useEffect(() => {
+    if (!qrUrl) { setQrDataUrl(null); return; }
     // Dynamic import keeps qrcode (~30KB) out of the main entry chunk —
     // it loads only when an owner opens the register-kit surface (R7 budget).
     import("qrcode")

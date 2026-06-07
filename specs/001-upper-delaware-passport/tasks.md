@@ -210,12 +210,12 @@ Per plan.md structure: `app/` (frontend, two Vite entries), `supabase/` (migrati
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-- [ ] T059 [P] Brand-compliance CI check `scripts/check-brand.mjs`: no emoji codepoints in `app/src` + copy strings, no rating affordances, singular/plural helper used (SC-009)
-- [ ] T060 [P] Accessibility e2e `tests/e2e/a11y.spec.ts`: axe AA pass + tap-target floors on all three surfaces (Art. IX)
-- [ ] T061 [P] Docs: sync `app/README.md` (env, entries, api seam), ops runbook `docs/runbooks/season-one-ops.md` (rotation, suspension/restore, gate-read procedure, reprint flow)
-- [ ] T062 Full quickstart validation pass; record outcomes in `specs/001-upper-delaware-passport/quickstart-results.md`
-- [ ] T063 [P] Update `DECISIONS.md` with implementation-time decisions; capture non-obvious learnings in `docs/solutions/` (Art. XXV)
-- [ ] T064 Remove the mock seam `app/src/data.js` once all screens are wired; delete dead code (Art. XXVIII)
+- [x] T059 [P] Brand-compliance CI check `scripts/check-brand.mjs`: no emoji codepoints in `app/src` + copy strings, no rating affordances, singular/plural helper used (SC-009)
+- [x] T060 [P] Accessibility e2e `tests/e2e/a11y.spec.ts`: axe AA pass + tap-target floors on all three surfaces (Art. IX)
+- [x] T061 [P] Docs: sync `app/README.md` (env, entries, api seam), ops runbook `docs/runbooks/season-one-ops.md` (rotation, suspension/restore, gate-read procedure, reprint flow)
+- [x] T062 Full quickstart validation pass; record outcomes in `specs/001-upper-delaware-passport/quickstart-results.md`
+- [x] T063 [P] Update `DECISIONS.md` with implementation-time decisions; capture non-obvious learnings in `docs/solutions/` (Art. XXV)
+- [x] T064 Remove the mock seam `app/src/data.js` once all screens are wired; delete dead code (Art. XXVIII)
 
 ---
 

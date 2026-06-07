@@ -6,13 +6,11 @@
 // ONCE per discovery render (batched over all visible business ids) and once on
 // detail open (single id, surface 'business_detail') — the steer-capture
 // pipeline (SC-006). Impressions are best-effort: a failed log never blocks the
-// surface. DEV mock fallback mirrors business/useBusiness.js + usePassport.js.
+// surface. Real-only (T064): the anon session is ensured before reading.
 // ============================================================
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "../lib/auth.js";
 import { ensurePatronSession } from "../lib/auth.js";
 import { getDiscovery, getBusinessDetail, recordImpressions } from "../lib/api.js";
-import { BUSINESSES } from "../data.js";
 
 // Flatten the §2.5 towns[] → picks[] into a single ordered list the screen
 // renders, preserving curation-first order within each town.
@@ -36,56 +34,20 @@ function flattenDiscovery(d) {
   return list;
 }
 
-// DEV mock list built from data.js (towns unwrapped).
-function mockDiscovery() {
-  return BUSINESSES.map((b) => ({
-    id: b.id,
-    slug: b.id,
-    name: b.name,
-    town: (b.town ?? "").replace(/,.*$/, ""),
-    category: b.kind ?? "",
-    ownerNote: b.perkSub ?? "",
-    regulars: b.regulars ?? 0,
-    regularsEmpty: (b.regulars ?? 0) === 0,
-    curationLabel: b.eyebrow === "Founding pick" ? "Founding Pick" : null,
-    isMock: true,
-  }));
-}
 
 export function useDiscovery() {
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isMock, setIsMock] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      let session = sessionData?.session ?? null;
-      if (!session) {
-        if (import.meta.env.DEV) {
-          // Bootstrap an anon patron so impressions attribute (the steer
-          // pipeline). If that's not possible, fall back to mocks.
-          try {
-            await ensurePatronSession();
-            session = (await supabase.auth.getSession()).data?.session ?? null;
-          } catch {
-            session = null;
-          }
-        }
-        if (!session) {
-          setBusinesses(mockDiscovery());
-          setIsMock(true);
-          return;
-        }
-      }
-
+      await ensurePatronSession(); // anonymous-first (R3)
       const data = await getDiscovery();
       const list = flattenDiscovery(data);
       setBusinesses(list);
-      setIsMock(false);
 
       // Batch-log impressions ONCE for every visible business (best-effort).
       const ids = list.map((b) => b.id).filter(Boolean);
@@ -94,10 +56,6 @@ export function useDiscovery() {
       }
     } catch (err) {
       setError(err);
-      if (import.meta.env.DEV) {
-        setBusinesses(mockDiscovery());
-        setIsMock(true);
-      }
     } finally {
       setLoading(false);
     }
@@ -107,7 +65,7 @@ export function useDiscovery() {
     load();
   }, [load]);
 
-  return { businesses, loading, error, isMock, reload: load };
+  return { businesses, loading, error, reload: load };
 }
 
 // ---------- Business detail (single business) ----------
@@ -148,29 +106,7 @@ export function useBusinessDetail(slug) {
       setLoading(true);
       setError(null);
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const session = sessionData?.session ?? null;
-        if (!session) {
-          if (import.meta.env.DEV) {
-            const m = BUSINESSES.find((b) => b.id === slug || b.code === slug);
-            if (m && !cancelled) {
-              setDetail({
-                id: m.id, slug: m.id, name: m.name,
-                town: (m.town ?? "").replace(/,.*$/, ""),
-                category: m.kind ?? "", hours: m.open ? "Open now" : "Closed today",
-                ownerNote: m.perkSub ?? "", directionsUrl: null,
-                regulars: m.regulars ?? 0, regularsEmpty: (m.regulars ?? 0) === 0,
-                myProgress: m.stamps > 0
-                  ? { stampCount: m.stamps, perks: [{ id: m.id, current: m.stamps, threshold: m.perkTotal }] }
-                  : null,
-                isMock: true,
-              });
-            }
-          } else if (!cancelled) {
-            setDetail(null);
-          }
-          return;
-        }
+        await ensurePatronSession(); // anonymous-first (R3)
         const data = await getBusinessDetail({ businessSlug: slug });
         if (cancelled) return;
         const view = fromDetail(data);

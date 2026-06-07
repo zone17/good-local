@@ -365,6 +365,22 @@ Purpose: read-only share to one co-owner email; no additional roles in v1 (FR-03
 
 Response: `{ "sent": true, "week_of": "2026-05-24" }`. Errors: `VALIDATION`, `FORBIDDEN`.
 
+### 3.10 `get_business_regulars` — owner's regulars list (RPC, read) *(added 2026-06-06, T064)*
+
+Purpose: the Regulars view — every patron with stamps at the owner's business, with visit count,
+first/last visit, and a simple trend. Art. V holds: rows are the owner's business only; nothing
+reveals a patron's activity elsewhere. Added when the mock seam was removed and the screen proved
+to have no backing verb. Context: `owner` (own business), `admin`. Risk tier: **1**.
+
+| Field | Type | Required | Validation |
+|---|---|---|---|
+| `business_id` | uuid | no | defaults to the caller's business; admin may pass any |
+
+Response: `[{ "patron_ref": "uuid", "display_name": "River" | null, "visits": 7,
+"since": "2026-06-01", "last_visit": "2026-06-14", "trend": "new"|"up"|"steady" }]`
+(`display_name` is null for anonymous patrons — the client renders the honest fallback, never an
+invented name.) Errors: `FORBIDDEN`.
+
 ### 3.9 `switch_winter_tier` / `revert_founding_rate` (RPC → edge for Stripe write)
 
 Purpose: move to the $49 winter tier (Nov–Apr window) and revert to the locked founding rate
@@ -588,10 +604,10 @@ automated without the UI.
 
 ---
 
-**Verb count: 26** — patron 7 (`record_check_in`, `record_impressions`, `claim_passport`,
-`link_device`, `get_my_passport`, `get_discovery`, `get_business_detail`); owner 11
+**Verb count: 27** — patron 7 (`record_check_in`, `record_impressions`, `claim_passport`,
+`link_device`, `get_my_passport`, `get_discovery`, `get_business_detail`); owner 12
 (`create_checkout_session`, `update_business_profile`, `publish_perk`, `update_perk`,
 `set_perk_active`, `get_register_kit`, `staff_check_in`, `redeem_perk`, `get_dashboard`,
-`share_weekly_note`, `switch_winter_tier`/`revert_founding_rate` counted as the tier pair);
+`share_weekly_note`, `get_business_regulars`, `switch_winter_tier`/`revert_founding_rate` counted as the tier pair);
 admin 7 (`approve_business`/`decline_business`, `curate_founding_pick`, `rotate_code`,
 `read_gate_metrics`, `list_staff_entry_audit`, `void_stamp`); webhook 1 (`stripe-webhook`).

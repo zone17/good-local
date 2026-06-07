@@ -11,7 +11,6 @@ import {
   Field, Input, Switch, Tabs, Stat, Notice, Row, Divider,
   Stamp, StampGrid, WalletPass, ProgressMeter, SealMark,
 } from "../ds.js";
-import { ME, BUSINESSES } from "../data.js";
 import { usePassport } from "./usePassport.js";
 import { useDiscovery, useBusinessDetail } from "./useDiscovery.js";
 
@@ -127,7 +126,8 @@ function PatronHome({ onSelectBiz }) {
           gap: 12, marginBottom: 14,
         }}>
           <div>
-            <div className="gl-eyebrow">{ME.startedSeason} · {ME.region}</div>
+            {/* v1 single region — names become API data when region #2 exists (Art. XVI) */}
+            <div className="gl-eyebrow">Season 1 · Upper Delaware</div>
             <div style={{
               fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600,
               lineHeight: 1.1, marginTop: 4, letterSpacing: "-0.012em",
@@ -261,192 +261,45 @@ function PatronHome({ onSelectBiz }) {
   );
 }
 
-// ---- Check-in flow ------------------------------------------
+// ---- Check-in (T064: honest explainer) -----------------------
+// The real check-in is the register QR -> the lean /c/{slug} entry (its own
+// bundle, full trust model). This tab explains the mechanic; it never fakes a
+// scan or a stamp (Art. I/II — no simulated check-ins in the product).
 
-function CheckinScreen({ onComplete }) {
-  const [phase, setPhase] = useState("scan"); // scan → success
-  const biz = BUSINESSES[0];
-
-  const triggerScan = () => {
-    setPhase("scanning");
-    setTimeout(() => setPhase("success"), 700);
-  };
-
-  if (phase === "success") {
-    return <CheckinSuccess biz={biz} onContinue={onComplete}/>;
-  }
-
+function CheckinScreen() {
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
       <TopBar title="Check in" trailing={<IconButton label="Help"><Icon name="info" size={20}/></IconButton>}/>
 
-      <div style={{ padding: "20px 16px 0", textAlign: "center" }}>
-        <div className="gl-eyebrow">Narrowsburg, NY</div>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, lineHeight: 1.15, margin: "6px 0 4px", letterSpacing: "-0.012em" }}>
+      <div style={{ padding: "24px 20px 0", textAlign: "center" }}>
+        <div style={{ color: "var(--pine-700)", display: "grid", placeItems: "center" }}>
+          <SealMark size={72}/>
+        </div>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, lineHeight: 1.15, margin: "14px 0 6px", letterSpacing: "-0.012em" }}>
           Hold your camera over the QR by the register.
         </div>
-        <div style={{ color: "var(--ink-500)", fontSize: 14, lineHeight: 1.5 }}>
-          We&apos;ll find which business this is and stamp it.
+        <div style={{ color: "var(--ink-700)", fontSize: 15, lineHeight: 1.55, maxWidth: 420, margin: "0 auto" }}>
+          No app needed — your phone opens the stamp page, and the visit lands in
+          this passport.
         </div>
       </div>
 
-      {/* Camera viewport — mock */}
-      <div
-        onClick={triggerScan}
-        style={{
-          margin: "22px 22px 0", aspectRatio: "1/1", borderRadius: 16,
-          background: "var(--ink-1000)", color: "var(--paper-100)",
-          position: "relative", overflow: "hidden", cursor: "pointer",
-        }}
-      >
-        {/* Crosshair */}
-        <div style={{
-          position: "absolute", inset: 28, border: "2px solid var(--paper-100)",
-          borderRadius: 12, opacity: 0.85,
-        }}>
-          <Corner pos="tl"/><Corner pos="tr"/><Corner pos="bl"/><Corner pos="br"/>
-          {phase === "scanning" ? (
-            <div style={{
-              position: "absolute", left: 0, right: 0, top: "50%",
-              height: 2, background: "var(--ochre-500)",
-              boxShadow: "0 0 20px var(--ochre-500)",
-              animation: "gl-scan 700ms linear",
-            }}/>
-          ) : null}
-        </div>
-        {/* Tap hint */}
-        <div style={{
-          position: "absolute", left: 0, right: 0, bottom: 14, textAlign: "center",
-          fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.08em",
-          textTransform: "uppercase", opacity: 0.7,
-        }}>
-          Tap to scan
-        </div>
-        <style>{`
-          @keyframes gl-scan {
-            0% { transform: translateY(-90px); }
-            100% { transform: translateY(90px); }
-          }
-        `}</style>
-      </div>
-
-      {/* Alt: phone-number path */}
-      <div style={{ padding: "20px 16px 4px" }}>
-        <Divider dashed/>
-        <div style={{ textAlign: "center", color: "var(--ink-500)", fontSize: 13, margin: "10px 0" }}>
-          Not your thing? Give the register your phone number.
-        </div>
-        <Field label="Phone number">
-          <Input type="tel" placeholder="(845) 555-0142"/>
-        </Field>
-        <Button variant="secondary" block style={{ marginTop: 12 }}>Send me a one-time link</Button>
-      </div>
-    </div>
-  );
-}
-
-function Corner({ pos }) {
-  const styles = {
-    tl: { top: -1, left: -1, borderTop: "3px solid var(--paper-100)", borderLeft: "3px solid var(--paper-100)" },
-    tr: { top: -1, right: -1, borderTop: "3px solid var(--paper-100)", borderRight: "3px solid var(--paper-100)" },
-    bl: { bottom: -1, left: -1, borderBottom: "3px solid var(--paper-100)", borderLeft: "3px solid var(--paper-100)" },
-    br: { bottom: -1, right: -1, borderBottom: "3px solid var(--paper-100)", borderRight: "3px solid var(--paper-100)" },
-  };
-  return <span style={{ position: "absolute", width: 28, height: 28, borderRadius: 4, ...styles[pos] }}/>;
-}
-
-function CheckinSuccess({ biz, onContinue }) {
-  const [showWalletSheet, setShowWalletSheet] = useState(false);
-  const [addedToWallet, setAddedToWallet] = useState(false);
-
-  if (showWalletSheet) {
-    return <WalletAddSheet biz={biz} onAdd={() => { setAddedToWallet(true); setShowWalletSheet(false); }} onClose={() => setShowWalletSheet(false)}/>;
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100%", background: "var(--paper-100)" }}>
-      <TopBar title="Stamped" trailing={null}/>
-
-      <div style={{ padding: "28px 20px 0", textAlign: "center" }}>
-        <div className="gl-eyebrow" style={{ color: "var(--stamp-700)" }}>Stamp #{biz.stamps + 1}</div>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 30, fontWeight: 600, lineHeight: 1.1, margin: "6px 0 10px", letterSpacing: "-0.012em" }}>
-          Stamped at {biz.name}.
-        </div>
-        <div style={{ color: "var(--ink-700)", fontSize: 15, lineHeight: 1.5 }}>
-          {biz.perkTotal - biz.stamps - 1 > 0
-            ? <>You&apos;re <strong>{visits(biz.perkTotal - biz.stamps - 1)}</strong> from {biz.perkLabel.toLowerCase()}.</>
-            : <>Your <strong>{biz.perkLabel}</strong> is ready.</>}
-        </div>
-      </div>
-
-      {/* Stamp animation */}
-      <div style={{ display: "grid", placeItems: "center", padding: "28px 0 12px" }}>
-        <Stamp state="earned" label={biz.code} date="06·14" size={120} just rotate={-4}/>
-      </div>
-
-      {/* Progress */}
-      <div style={{ padding: "0 20px" }}>
-        <Card style={{ padding: "14px 16px" }}>
-          <ProgressMeter count={biz.stamps + 1} total={biz.perkTotal} label={biz.perkLabel} remainingLabel={`${visits(biz.perkTotal - biz.stamps - 1)} to go`}/>
-          <div style={{ marginTop: 12 }}>
-            <StampGrid
-              size={42} gap={8} columns={biz.perkTotal} total={biz.perkTotal}
-              stamps={Array.from({ length: biz.stamps + 1 }).map((_, i) => ({
-                label: biz.code, date: "06·14", rotate: [-3,2,-2,3,-1][i] || 0,
-              }))}
-            />
-          </div>
+      <div style={{ padding: "22px 20px 0" }}>
+        <Card style={{ padding: "16px" }}>
+          <div className="gl-eyebrow">How it works</div>
+          <ol style={{ margin: "10px 0 0", paddingLeft: 18, color: "var(--ink-700)", fontSize: 14, lineHeight: 1.7 }}>
+            <li>Find the kraft card by the register.</li>
+            <li>Point your camera at the code.</li>
+            <li>That&apos;s the stamp — one per business per day.</li>
+          </ol>
         </Card>
       </div>
 
-      {/* CTAs */}
-      <div style={{ padding: "20px 20px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-        {!addedToWallet ? (
-          <Button variant="wallet" block leadingIcon={<Icon name="wallet" size={20}/>} onClick={() => setShowWalletSheet(true)}>
-            Add Passport to Apple Wallet
-          </Button>
-        ) : (
-          <Notice tone="pine" icon={<Icon name="check"/>} title="Pass added">
-            Your Upper Delaware Passport is in your wallet.
-          </Notice>
-        )}
-        <Button variant="secondary" block onClick={onContinue}>Done</Button>
-      </div>
-
-      <div style={{ flex: 1 }}/>
-    </div>
-  );
-}
-
-function WalletAddSheet({ biz, onAdd, onClose }) {
-  return (
-    <div style={{ position: "absolute", inset: 0, background: "rgba(26,22,18,0.55)", display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 10 }}>
-      <div style={{
-        background: "var(--paper-50)", borderTopLeftRadius: 22, borderTopRightRadius: 22,
-        padding: "10px 16px 24px",
-        animation: "gl-sheet-up 220ms var(--ease-out)",
-      }}>
-        <style>{`@keyframes gl-sheet-up { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
-        <div style={{ width: 36, height: 4, background: "var(--ink-200)", borderRadius: 2, margin: "0 auto 14px" }}/>
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <div className="gl-eyebrow">Preview</div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, lineHeight: 1.15, marginTop: 4, letterSpacing: "-0.012em" }}>
-            Your Upper Delaware Passport
-          </div>
-        </div>
-        <div style={{ transform: "scale(0.85)", transformOrigin: "top center", marginBottom: -50, display: "grid", placeItems: "center" }}>
-          <WalletPass
-            businessName={biz.name}
-            region={biz.town}
-            count={biz.stamps + 1} total={biz.perkTotal}
-            perkLabel={biz.perkLabel}
-            perkSub={biz.perkSub}
-            stampCode={biz.code}
-          />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
-          <Button variant="wallet" block leadingIcon={<Icon name="wallet" size={20}/>} onClick={onAdd}>Add to Apple Wallet</Button>
-          <Button variant="ghost" block onClick={onClose}>Not now</Button>
+      <div style={{ padding: "16px 20px 0" }}>
+        <Divider dashed/>
+        <div style={{ textAlign: "center", color: "var(--ink-500)", fontSize: 13, marginTop: 12, lineHeight: 1.6 }}>
+          Not your thing? Give the counter your phone number and they&apos;ll
+          stamp you in — your passport arrives by text.
         </div>
       </div>
     </div>
@@ -639,9 +492,26 @@ function BusinessDetail({ bizId, onBack }) {
   );
 }
 
-// ---- Me ------------------------------------------------------
+// ---- Me (T064: real passport data, honest identity) ----------
 
 function MeScreen() {
+  const { passport, loading } = usePassport();
+
+  if (loading || !passport) {
+    return (
+      <div style={{ paddingBottom: 24 }}>
+        <TopBar title="Me"/>
+        <div style={{ padding: "40px 16px", textAlign: "center", color: "var(--ink-500)", fontSize: 14 }}>
+          Loading your passport…
+        </div>
+      </div>
+    );
+  }
+
+  const { businesses, region, patron } = passport;
+  const totalStamps = businesses.reduce((sum, b) => sum + b.stampCount, 0);
+  const perksReady = businesses.filter((b) => b.perk?.ready).length;
+
   return (
     <div style={{ paddingBottom: 24 }}>
       <TopBar title="Me" trailing={<IconButton label="Settings"><Icon name="settings" size={20}/></IconButton>}/>
@@ -651,31 +521,20 @@ function MeScreen() {
         </div>
         <div className="gl-eyebrow" style={{ marginTop: 12 }}>Upper Delaware Passport</div>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, marginTop: 4 }}>
-          Maya Reyes
+          {patron.displayName ?? "Your passport"}
         </div>
         <div style={{ color: "var(--ink-500)", fontSize: 13, marginTop: 2 }}>
-          Joined June 2026 · Narrowsburg cluster
+          {patron.claimed
+            ? "Claimed — your stamps follow your phone number."
+            : "Not claimed yet — give any register your number to keep your stamps across phones."}
         </div>
       </div>
 
       <div style={{ padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Card style={{ padding: 14 }}><Stat label="Stamps" value="10"/></Card>
-        <Card style={{ padding: 14 }}><Stat label="Towns" value="4" suffix="/12"/></Card>
-        <Card style={{ padding: 14 }}><Stat label="Places" value="5"/></Card>
-        <Card style={{ padding: 14 }}><Stat label="Perks ready" value="1"/></Card>
-      </div>
-
-      <div style={{ padding: "8px 16px" }}>
-        <Card variant="bordered" style={{ padding: 0 }}>
-          <Row title="Lock-screen surfacing" sub="Suggest your pass near a participating business"
-               trailing={<Switch checked={true} onChange={()=>{}} label="Toggle"/>}/>
-          <Row title="Wallet pass · UDP·NRWB·a7q9" sub="Refresh from Apple Wallet"
-               trailing={<Icon name="chevron-right" size={18}/>}/>
-          <Row title="Privacy" sub="Owners see aggregate, not your history"
-               trailing={<Icon name="chevron-right" size={18}/>}/>
-          <Row title="Help & contact"
-               trailing={<Icon name="chevron-right" size={18}/>}/>
-        </Card>
+        <Card style={{ padding: 14 }}><Stat label="Stamps" value={String(totalStamps)}/></Card>
+        <Card style={{ padding: 14 }}><Stat label="Towns" value={String(region.townsVisited)} suffix={`/${region.townsTotal}`}/></Card>
+        <Card style={{ padding: 14 }}><Stat label="Places" value={String(businesses.length)}/></Card>
+        <Card style={{ padding: 14 }}><Stat label="Perks ready" value={String(perksReady)}/></Card>
       </div>
     </div>
   );
@@ -686,7 +545,6 @@ function MeScreen() {
 function PatronApp({ initialTab = "home" }) {
   const [tab, setTab] = useState(initialTab);
   const [detail, setDetail] = useState(null);
-  const [postCheckinTo, setPostCheckinTo] = useState("home");
 
   useEffect(() => { setDetail(null); }, [tab]);
 
@@ -698,7 +556,7 @@ function PatronApp({ initialTab = "home" }) {
   } else if (tab === "discover") {
     body = <DiscoverScreen onSelectBiz={setDetail}/>;
   } else if (tab === "checkin") {
-    body = <CheckinScreen onComplete={() => setTab(postCheckinTo)}/>;
+    body = <CheckinScreen/>;
   } else if (tab === "me") {
     body = <MeScreen/>;
   }

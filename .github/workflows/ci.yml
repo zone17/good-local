@@ -48,10 +48,15 @@ jobs:
       - name: Run vitest
         run: npx vitest run
 
-  # 3) Brand: placeholder until brand checks land in T059.
+  # 3) Brand: enforce the SC-009 brand rules (no emoji, no rating affordances,
+  #    plain voice, plural-helper usage) over app/src + design/components.
   brand:
     name: brand
     runs-on: ubuntu-latest
     steps:
-      - name: Placeholder
-        run: echo "brand checks land in T059"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check brand compliance
+        run: node scripts/check-brand.mjs

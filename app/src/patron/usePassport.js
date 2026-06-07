@@ -1,18 +1,18 @@
 // ============================================================
 // usePassport.js — patron passport-home data hook (US4 T043).
 //
-// Reads the grouped passport via api.getMyPassport (contract §2.4). When there
-// is no authenticated session (or no backend), falls back to the data.js mocks
-// in DEV so the demo surface still renders — mirrors business/useBusiness.js.
+// Reads the grouped passport via api.getMyPassport (contract §2.4).
+// Anonymous-first (R3): visiting the passport mints the anon session the same
+// way a register scan does — one identity across both entries (gl-auth).
+// No mock fallback (T064): empty passports render the honest empty state.
 //
 // Shape returned to PatronApp normalizes the contract response into the fields
 // the design screens read (mock-compatible): a hero (top business by progress),
 // grouped businesses with real stamp dates + perk progress, and the region card.
 // ============================================================
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "../lib/auth.js";
+import { ensurePatronSession } from "../lib/auth.js";
 import { getMyPassport } from "../lib/api.js";
-import { ME, BUSINESSES, MY_STAMPS } from "../data.js";
 
 // Format an ISO date (YYYY-MM-DD) as the design's MM·DD stamp label.
 function stampLabel(isoDate) {
@@ -80,58 +80,6 @@ function fromPassport(p) {
     },
     businesses,
     hero,
-    isMock: false,
-  };
-}
-
-// DEV mock built from data.js, in the same normalized shape.
-function mockPassport() {
-  const grouped = {};
-  MY_STAMPS.forEach((s) => {
-    (grouped[s.code] = grouped[s.code] || []).push(s);
-  });
-  const businesses = Object.entries(grouped).map(([code, stamps]) => {
-    const biz = BUSINESSES.find((b) => b.code === code);
-    return {
-      slug: biz?.id ?? code,
-      name: biz?.name ?? code,
-      town: (biz?.town ?? "").replace(/,.*$/, ""),
-      stampCount: stamps.length,
-      stampDates: stamps.map((s) => s.date),
-      stamps: stamps.map((s, i) => ({ label: code, date: s.date, rotate: s.rotate ?? rotateFor(i) })),
-      perk: biz
-        ? {
-            id: biz.id,
-            name: biz.perkLabel,
-            current: stamps.length,
-            threshold: biz.perkTotal,
-            ready: stamps.length >= biz.perkTotal,
-          }
-        : null,
-    };
-  });
-  const heroBiz = BUSINESSES.find((b) => b.id === "heron");
-  const hero = businesses.find((b) => b.slug === "heron") ?? {
-    slug: "heron",
-    name: heroBiz.name,
-    town: heroBiz.town.replace(/,.*$/, ""),
-    stampCount: heroBiz.stamps,
-    stampDates: [],
-    stamps: [],
-    perk: {
-      id: "heron",
-      name: heroBiz.perkLabel,
-      current: heroBiz.stamps,
-      threshold: heroBiz.perkTotal,
-      ready: heroBiz.stamps >= heroBiz.perkTotal,
-    },
-  };
-  return {
-    patron: { id: null, displayName: ME.firstName, claimed: false },
-    region: { townsVisited: 4, townsTotal: 12, milestones: [] },
-    businesses,
-    hero,
-    isMock: true,
   };
 }
 
@@ -144,17 +92,12 @@ export function usePassport() {
     setLoading(true);
     setError(null);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const session = sessionData?.session ?? null;
-      if (!session) {
-        setPassport(import.meta.env.DEV ? mockPassport() : null);
-        return;
-      }
+      await ensurePatronSession(); // anonymous-first — no account wall (R3)
       const data = await getMyPassport();
       setPassport(fromPassport(data));
     } catch (err) {
       setError(err);
-      if (import.meta.env.DEV) setPassport(mockPassport());
+      setPassport(null);
     } finally {
       setLoading(false);
     }

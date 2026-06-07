@@ -11,47 +11,15 @@ import {
   Field, Input, Textarea, Switch, Select, Tabs, Stat, Notice, Row, Divider,
   Stamp, StampGrid, WalletPass, ProgressMeter, SealMark,
 } from "../ds.js";
-import { BUSINESS, WEEK, PERKS, REGULARS } from "../data.js";
+import OwnerSignIn from "./OwnerSignIn.jsx";
 import * as api from "../lib/api.js";
 import { supabase } from "../lib/auth.js";
 import { useBusiness } from "./useBusiness.js";
 import RegisterKit from "./RegisterKit.jsx";
 
-// ---- Dashboard data hook (T052) ----------------------------
-// Reads the owner's real aggregates via api.getDashboard. With no authenticated
-// owner session, falls back to the data.js mocks (DEV) so the demo renders.
-// The DEV mock mirrors the contract §3.7 shape so the same render path works.
-const MOCK_DASHBOARD = {
-  weekly_note:
-    `${WEEK.regulars} regulars came in last week, up ${String(WEEK.regularsDelta).replace("+", "")}. ` +
-    "Your free-pour perk was redeemed 9 times — your highest yet.",
-  headline: {
-    repeat_visit_rate: WEEK.repeatRate / 100,
-    verified_regulars: WEEK.regulars,
-    new_patrons: WEEK.newPatrons,
-    redemptions: WEEK.perkRedemptions,
-    deltas: { verified_regulars: 6, new_patrons: 1, redemptions: 3 },
-  },
-  perk_performance: PERKS.filter((p) => p.active).map((p) => ({
-    perk_id: p.id,
-    name: p.name,
-    redemptions: p.redemptions ?? 0,
-    eligible: p.eligible ?? 0,
-    read: p.note ?? "Steady.",
-  })),
-  activity_feed: [
-    { at: "2026-06-14T16:12:00Z", patron_display: "Maya R.", event: "stamp" },
-    { at: "2026-06-14T14:48:00Z", patron_display: "Alex T.", event: "redemption" },
-    { at: "2026-06-14T13:20:00Z", patron_display: "Jess L.", event: "staff_stamp" },
-    { at: "2026-06-14T11:09:00Z", patron_display: "Dan H.", event: "stamp" },
-  ],
-  visit_pattern_14d: [12, 14, 8, 10, 16, 24, 31, 14, 17, 9, 12, 19, 26, 33].map((s, i) => ({
-    date: `2026-06-${String(i + 1).padStart(2, "0")}`,
-    stamps: s,
-  })),
-  ready_redemptions: [],
-};
-
+// ---- Dashboard data hook (T052; real-only since T064) ------
+// Reads the owner's real aggregates via api.getDashboard. The app shell
+// guarantees an owner session before any view renders.
 function useDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -59,15 +27,10 @@ function useDashboard() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData?.session) {
-        setData(import.meta.env.DEV ? MOCK_DASHBOARD : null);
-        return;
-      }
       const real = await api.getDashboard();
       setData(real);
     } catch {
-      setData(import.meta.env.DEV ? MOCK_DASHBOARD : null);
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -150,7 +113,7 @@ function Sidebar({ view, onChange, business }) {
 
 // ---- Topbar -------------------------------------------------
 
-function TopBar({ onNewPerk }) {
+function TopBar({ onNewPerk, business }) {
   return (
     <div style={{
       padding: "18px 28px",
@@ -158,16 +121,16 @@ function TopBar({ onNewPerk }) {
       borderBottom: "1px solid var(--ink-100)", background: "var(--paper-50)",
     }}>
       <div>
-        <div className="gl-eyebrow">{BUSINESS.town}</div>
+        <div className="gl-eyebrow">{business?.town ?? ""}</div>
         <div style={{
           fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600,
           letterSpacing: "-0.012em", lineHeight: 1.1, marginTop: 2,
         }}>
-          {BUSINESS.name}
+          {business?.name ?? ""}
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Badge variant="pine">{BUSINESS.hours}</Badge>
+        {business?.hours ? <Badge variant="pine">{business.hours}</Badge> : null}
         <Button leadingIcon={<Icon name="plus" size={18}/>} onClick={onNewPerk}>New perk</Button>
         <IconButton bordered label="Notifications"><Icon name="bell" size={18}/></IconButton>
         <div style={{
@@ -205,7 +168,7 @@ const EVENT_COPY = {
 
 function Dashboard({ business }) {
   const { data, reload } = useDashboard();
-  const code = business?.code ?? BUSINESS.code;
+  const code = business?.code ?? "";
 
   if (!data) {
     return (
@@ -613,12 +576,12 @@ function PerkBuilder({ onClose, business, onChanged }) {
             <div className="gl-eyebrow">Preview · patron pass</div>
             <div style={{ display: "grid", placeItems: "center", transform: "scale(0.78)", transformOrigin: "top center", marginBottom: -90 }}>
               <WalletPass
-                businessName={BUSINESS.name}
-                region={BUSINESS.town}
+                businessName={business?.name ?? "Your business"}
+                region={business?.town ?? ""}
                 count={threshold - 2} total={threshold}
                 perkLabel={name || "Your perk name"}
                 perkSub={desc || "What the patron sees"}
-                stampCode={BUSINESS.code}
+                stampCode={business?.code ?? ""}
               />
             </div>
             <div style={{ marginTop: 100 }}>
@@ -643,10 +606,34 @@ function PerkBuilder({ onClose, business, onChanged }) {
   );
 }
 
-// ---- Regulars view ------------------------------------------
+// ---- Regulars view (T064: real data via contract §3.10) ------
+
+const TREND_LABEL = { new: "NEW THIS SEASON", up: "TRENDING UP", steady: "STEADY" };
+
+function initialsFor(name) {
+  if (!name) return null;
+  return name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+}
 
 function RegularsView() {
   const [view, setView] = useState("All");
+  const [rows, setRows] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getBusinessRegulars()
+      .then((data) => { if (!cancelled) setRows(data ?? []); })
+      .catch((err) => { if (!cancelled) { setError(err); setRows([]); } });
+    return () => { cancelled = true; };
+  }, []);
+
+  const all = rows ?? [];
+  const shown =
+    view === "New" ? all.filter((r) => r.trend === "new")
+    : view === "Trending" ? all.filter((r) => r.trend === "up")
+    : all;
+
   return (
     <div style={{ padding: 28, display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -655,54 +642,73 @@ function RegularsView() {
           <div style={{
             fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600,
             letterSpacing: "-0.012em", marginTop: 4,
-          }}>{REGULARS.length} people, coming back</div>
+          }}>
+            {rows === null ? "Loading…" : `${all.length} ${all.length === 1 ? "person" : "people"}, coming back`}
+          </div>
         </div>
-        <Tabs tabs={["All", "New", "Slipping"]} value={view} onChange={setView}/>
+        <Tabs tabs={["All", "New", "Trending"]} value={view} onChange={setView}/>
       </div>
 
       <Notice tone="river" icon={<Icon name="info" size={18}/>} title="Your privacy promise">
         You see how often, not who else they visit. Patron history across other businesses stays with the patron.
       </Notice>
 
-      <Card style={{ padding: 0 }}>
-        <div style={{
-          display: "grid", gridTemplateColumns: "1.8fr 1fr 100px 100px 40px",
-          padding: "12px 20px", borderBottom: "1px solid var(--ink-200)",
-          fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-          letterSpacing: "0.1em", color: "var(--ink-500)",
-        }}>
-          <span>Patron</span>
-          <span>Background</span>
-          <span style={{ textAlign: "right" }}>Visits</span>
-          <span style={{ textAlign: "right" }}>Since</span>
-          <span></span>
-        </div>
-        {REGULARS.map((r) => (
-          <div key={r.initials} style={{
-            display: "grid", gridTemplateColumns: "1.8fr 1fr 100px 100px 40px",
-            padding: "14px 20px", borderBottom: "1px solid var(--ink-100)",
-            alignItems: "center",
+      {error ? (
+        <Notice tone="ochre" title="Could not load your regulars">Try again in a moment.</Notice>
+      ) : null}
+
+      {rows !== null && all.length === 0 && !error ? (
+        <Card style={{ padding: 24, textAlign: "center", color: "var(--ink-700)", fontSize: 14, lineHeight: 1.6 }}>
+          Nobody has stamped in yet. Your first regular starts with a first visit —
+          the QR kit by the register does the rest.
+        </Card>
+      ) : null}
+
+      {all.length > 0 ? (
+        <Card style={{ padding: 0 }}>
+          <div style={{
+            display: "grid", gridTemplateColumns: "2fr 110px 110px 110px",
+            padding: "12px 20px", borderBottom: "1px solid var(--ink-200)",
+            fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+            letterSpacing: "0.1em", color: "var(--ink-500)",
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: 999, background: "var(--paper-300)",
-                color: "var(--ink-1000)", display: "grid", placeItems: "center",
-                fontWeight: 700, fontSize: 13,
-              }}>{r.initials}</div>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{r.name}</div>
-                <div style={{ fontSize: 11, color: "var(--ink-500)", fontFamily: "var(--font-mono)" }}>
-                  {r.trend === "new" ? "NEW THIS SEASON" : r.trend === "up" ? "TRENDING UP" : "STEADY"}
-                </div>
-              </div>
-            </div>
-            <div style={{ fontSize: 13, color: "var(--ink-700)" }}>{r.town}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 14, textAlign: "right" }}>{r.visits}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-500)", textAlign: "right" }}>{r.since}</div>
-            <div style={{ textAlign: "right", color: "var(--ink-300)" }}><Icon name="chevron-right" size={18}/></div>
+            <span>Patron</span>
+            <span style={{ textAlign: "right" }}>Visits</span>
+            <span style={{ textAlign: "right" }}>Since</span>
+            <span style={{ textAlign: "right" }}>Last visit</span>
           </div>
-        ))}
-      </Card>
+          {shown.map((r) => {
+            const initials = initialsFor(r.display_name);
+            return (
+              <div key={r.patron_ref} style={{
+                display: "grid", gridTemplateColumns: "2fr 110px 110px 110px",
+                padding: "14px 20px", borderBottom: "1px solid var(--ink-100)",
+                alignItems: "center",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 999, background: "var(--paper-300)",
+                    color: "var(--ink-1000)", display: "grid", placeItems: "center",
+                    fontWeight: 700, fontSize: 13,
+                  }} aria-hidden="true">
+                    {initials ?? <Icon name="stamp" size={16}/>}
+                  </div>
+                  <div>
+                    {/* display_name may be null for anonymous patrons — honest fallback, never invented */}
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{r.display_name ?? "Passport patron"}</div>
+                    <div style={{ fontSize: 11, color: "var(--ink-500)", fontFamily: "var(--font-mono)" }}>
+                      {TREND_LABEL[r.trend] ?? "STEADY"}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 14, textAlign: "right" }}>{r.visits}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-500)", textAlign: "right" }}>{r.since}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-500)", textAlign: "right" }}>{r.last_visit}</div>
+              </div>
+            );
+          })}
+        </Card>
+      ) : null}
     </div>
   );
 }
@@ -827,7 +833,34 @@ function SettingsView({ business, onChanged }) {
 function BusinessApp() {
   const [view, setView] = useState("dashboard");
   const [builderOpen, setBuilderOpen] = useState(false);
-  const { business, reload } = useBusiness();
+  const { business, loading, needsAuth, reload } = useBusiness();
+
+  // T064 gates: no session -> sign in; session without a business -> signup path.
+  if (needsAuth) return <OwnerSignIn onSignedIn={reload}/>;
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100%", display: "grid", placeItems: "center", color: "var(--ink-500)", fontSize: 14 }}>
+        Loading your program…
+      </div>
+    );
+  }
+  if (!business) {
+    return (
+      <div style={{ minHeight: "100%", display: "grid", placeItems: "center", padding: 24 }}>
+        <Card style={{ padding: 28, width: 460, maxWidth: "92vw", textAlign: "center" }}>
+          <div className="gl-eyebrow">Good Local · Business</div>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, margin: "6px 0 10px" }}>
+            No program on this account yet.
+          </div>
+          <div style={{ color: "var(--ink-700)", fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>
+            Set up your rewards program — profile, first perk, printable register
+            kit — and be live the same day.
+          </div>
+          <Button onClick={() => { window.location.href = "/business/signup"; }}>Set up your program</Button>
+        </Card>
+      </div>
+    );
+  }
 
   let body;
   if (view === "dashboard") body = <Dashboard business={business}/>;
@@ -840,7 +873,7 @@ function BusinessApp() {
     <div style={{ display: "flex", height: "100%", background: "var(--paper-50)" }}>
       <Sidebar view={view} onChange={setView} business={business}/>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <TopBar onNewPerk={() => { setView("perks"); setBuilderOpen(true); }}/>
+        <TopBar business={business} onNewPerk={() => { setView("perks"); setBuilderOpen(true); }}/>
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>{body}</div>
       </div>
     </div>

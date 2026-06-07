@@ -44,7 +44,7 @@ export function Stamp({
     : state === "locked" ? "Locked stamp" : "Empty stamp slot";
 
   return (
-    <span className={cls} style={wrapStyle} aria-label={ariaLabel}>
+    <span className={cls} style={wrapStyle} role="img" aria-label={ariaLabel}>
       <span className="gl-stamp__inner" style={innerStyle}>
         {state === "earned" ? (
           <StampSvg size={size} label={label} date={date} town={town}/>
