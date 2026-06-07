@@ -63,8 +63,14 @@ Deno.serve(async (req: Request) => {
     if (error) {
       // claim_passport raises errcode P0001 with MESSAGE = the §7 code.
       const code = (error.message || "").trim();
-      const known = ["OTP_INVALID", "OTP_EXPIRED", "UNAUTHENTICATED"].includes(code);
-      const status = code === "OTP_EXPIRED" ? 410 : code === "UNAUTHENTICATED" ? 401 : 422;
+      const known = ["OTP_INVALID", "OTP_EXPIRED", "UNAUTHENTICATED", "RATE_LIMITED", "INVALID_STATE"]
+        .includes(code);
+      const status =
+        code === "OTP_EXPIRED" ? 410
+        : code === "UNAUTHENTICATED" ? 401
+        : code === "RATE_LIMITED" ? 429
+        : code === "INVALID_STATE" ? 409
+        : 422;
       return json({ error: { code: known ? code : "OTP_INVALID", message: error.message } }, status);
     }
     return json(data, 200);
@@ -72,6 +78,26 @@ Deno.serve(async (req: Request) => {
 
   // ---- send path: { phone } → mint + store OTP, deliver via provider ----
   const db = createClient(url, serviceKey, { auth: { persistSession: false } });
+
+  // Send cap (review P1-3): at most 5 OTP sends per phone per hour. otp_codes
+  // is service-role-only, so this edge fn is the single door for sends — the
+  // cap here is complete. (Verify-side brute force is limited in the RPC.)
+  const sinceIso = new Date(Date.now() - 60 * 60_000).toISOString();
+  const { count: recentSends, error: cntErr } = await db
+    .from("otp_codes")
+    .select("id", { count: "exact", head: true })
+    .eq("phone", phone)
+    .gte("created_at", sinceIso);
+  if (cntErr) {
+    return json({ error: { code: "VALIDATION", message: cntErr.message } }, 500);
+  }
+  if ((recentSends ?? 0) >= 5) {
+    return json(
+      { error: { code: "RATE_LIMITED", message: "too many codes requested; try again later" } },
+      429,
+    );
+  }
+
   const code = generateOtp();
   const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
 

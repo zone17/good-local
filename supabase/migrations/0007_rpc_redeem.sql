@@ -203,6 +203,14 @@ begin
     raise exception 'PERK_NOT_READY' using errcode = 'P0001';
   end if;
 
+  -- Serialize redemptions per (patron, perk) — without this, two concurrent
+  -- redeems both pass the threshold read and double-redeem (review P2-6 TOCTOU;
+  -- perk_redemptions has no natural unique key because repeat redemptions
+  -- across cycles are legitimate). Released at commit/rollback.
+  perform pg_advisory_xact_lock(
+    hashtextextended(p_patron_ref::text || ':' || p_perk_id::text, 0)
+  );
+
   -- Progress since the patron's last redemption of this perk must meet threshold.
   v_current := perk_progress_count(p_patron_ref, p_perk_id);
   if v_current < v_perk.visit_threshold then
@@ -233,5 +241,11 @@ begin
 end $$;
 
 -- ---------- Grants ----------
-grant execute on function perk_progress_count(uuid, uuid) to authenticated;
-grant execute on function redeem_perk(uuid, uuid)         to authenticated;
+-- perk_progress_count takes an arbitrary patron_id — direct app-role execution
+-- would let any authenticated user probe another patron's progress integer
+-- (review P3-14). It is an INTERNAL helper: the SECURITY DEFINER RPCs
+-- (redeem_perk, checkin_progress, get_business_detail) call it as the function
+-- owner regardless of grants; only service_role (tests/ops) may call it directly.
+revoke execute on function perk_progress_count(uuid, uuid) from public, anon, authenticated;
+grant  execute on function perk_progress_count(uuid, uuid) to service_role;
+grant  execute on function redeem_perk(uuid, uuid)         to authenticated;

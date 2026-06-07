@@ -20,7 +20,18 @@ Deno.serve(async (req: Request) => {
     return new Response("POST only", { status: 405 });
   }
 
-  const secret = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "whsec_local_test";
+  // FAIL CLOSED (review P1-4): an unset secret must reject every event, never
+  // fall back to a committed literal anyone can sign with
+  // (docs/solutions/fail-closed-dev-affordances.md). Local dev sets
+  // STRIPE_WEBHOOK_SECRET explicitly (supabase functions serve --env-file).
+  const secret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+  if (!secret) {
+    console.error("[stripe-webhook] STRIPE_WEBHOOK_SECRET is not set — rejecting event");
+    return new Response(
+      JSON.stringify({ error: { code: "STRIPE_ERROR", message: "webhook not configured" } }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
   const sigHeader = req.headers.get("stripe-signature");
   const rawBody = await req.text();
 

@@ -154,9 +154,12 @@ begin
       and trust_valid and voided_at is null;
 
     if v_my_count > 0 then
+      -- Per-perk 'current' uses the since-last-redemption rule (D-018) — the
+      -- lifetime stamp count showed inflated progress after a redemption
+      -- (review P3-12). stamp_count above stays lifetime by design.
       select coalesce(jsonb_agg(jsonb_build_object(
                'perk_id', p.id,
-               'current', v_my_count,
+               'current', perk_progress_count(v_patron, p.id),
                'threshold', p.visit_threshold
              ) order by p.visit_threshold), '[]'::jsonb)
         into v_my_perks

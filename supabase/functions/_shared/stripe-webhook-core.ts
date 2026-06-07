@@ -111,17 +111,26 @@ export async function verifyStripeSignature(
 
 // ---------- DB helpers (single-writer) ----------
 
-async function alreadyProcessed(db: DbLike, eventId: string): Promise<boolean> {
-  const { data } = await db
+/**
+ * Claim an event id by INSERTING FIRST (review P2-7): the old SELECT-then-
+ * INSERT-at-the-end left a window where two concurrent deliveries of the same
+ * event both passed the check and double-applied side effects (the second
+ * INSERT then threw an uncaught dup-key → 500 → another Stripe retry).
+ * `ignoreDuplicates` upsert is INSERT ... ON CONFLICT DO NOTHING with the
+ * inserted rows returned — zero rows back means someone else holds the claim.
+ */
+async function claimEvent(db: DbLike, eventId: string): Promise<boolean> {
+  const { data, error } = await db
     .from("processed_stripe_events")
-    .select("event_id")
-    .eq("event_id", eventId)
-    .maybeSingle();
-  return !!data;
+    .upsert({ event_id: eventId }, { onConflict: "event_id", ignoreDuplicates: true })
+    .select("event_id");
+  if (error) throw new Error(`claimEvent ${eventId}: ${error.message}`);
+  return (data?.length ?? 0) > 0;
 }
 
-async function markProcessed(db: DbLike, eventId: string): Promise<void> {
-  await db.from("processed_stripe_events").insert({ event_id: eventId });
+/** Release a claim after a side-effect failure so the Stripe retry re-applies. */
+async function releaseEvent(db: DbLike, eventId: string): Promise<void> {
+  await db.from("processed_stripe_events").delete().eq("event_id", eventId);
 }
 
 async function findSubscription(db: DbLike, stripeSubscriptionId: string): Promise<any | null> {
@@ -148,10 +157,24 @@ export async function handleStripeEvent(
   event: StripeEvent,
   db: DbLike,
 ): Promise<{ handled: boolean; deduped?: boolean; type: string }> {
-  if (await alreadyProcessed(db, event.id)) {
+  // Claim before any side effect; a concurrent duplicate delivery loses the
+  // claim and no-ops. On side-effect failure the claim is released so the
+  // Stripe retry (non-2xx → redeliver) applies the event cleanly.
+  if (!(await claimEvent(db, event.id))) {
     return { handled: true, deduped: true, type: event.type };
   }
 
+  try {
+    await applyStripeEvent(event, db);
+  } catch (err) {
+    await releaseEvent(db, event.id);
+    throw err;
+  }
+  return { handled: true, type: event.type };
+}
+
+/** The actual side effects, applied exactly once per claimed event id. */
+async function applyStripeEvent(event: StripeEvent, db: DbLike): Promise<void> {
   const obj = event.data.object ?? {};
 
   switch (event.type) {
@@ -252,11 +275,8 @@ export async function handleStripeEvent(
     }
 
     default:
-      // Unhandled event types are acknowledged (200) but recorded as processed
+      // Unhandled event types are acknowledged (200) and keep their claim row
       // so Stripe does not retry them indefinitely.
       break;
   }
-
-  await markProcessed(db, event.id);
-  return { handled: true, type: event.type };
 }

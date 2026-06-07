@@ -32,7 +32,8 @@ begin
     raise exception 'FORBIDDEN' using errcode = 'P0001';
   end if;
 
-  select coalesce(jsonb_agg(row order by row->>'visits' desc), '[]'::jsonb) into v_out
+  -- ::int — '->>'' yields text and "9" sorts above "10" lexicographically (review P3-13).
+  select coalesce(jsonb_agg(row order by (row->>'visits')::int desc), '[]'::jsonb) into v_out
   from (
     select jsonb_build_object(
       'patron_ref', s.patron_id,

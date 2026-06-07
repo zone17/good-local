@@ -400,6 +400,15 @@ language sql stable security definer set search_path = public as $$
   join gate_thresholds t on t.metric = g.metric
 $$;
 
+-- gate_metrics_evaluated is an INTERNAL evaluator, not a public verb (review
+-- P2-11): without this revoke, Postgres's default PUBLIC EXECUTE let any anon
+-- JWT read every gate metric. It carries no assert_admin() in the body because
+-- the nightly pg_cron snapshot (0012) calls it with no JWT — access control is
+-- the grant. Trusted callers are unaffected: read_gate_metrics() and
+-- snapshot_gate_metrics() are SECURITY DEFINER (owner always executes).
+revoke execute on function gate_metrics_evaluated() from public, anon, authenticated;
+grant  execute on function gate_metrics_evaluated() to service_role;
+
 create or replace function read_gate_metrics()
 returns jsonb
 language plpgsql stable security definer set search_path = public as $$

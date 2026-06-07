@@ -4,6 +4,14 @@ Date: 2026-06-07. Re-run of the crashed 2026-06-07 review using defense-framed
 personas (correctness, security, data-migration). Source detail:
 `review-correctness.md`, `review-security.md`, `review-migrations.md`.
 
+> **RESOLUTION (2026-06-07, D-021)**: all 16 findings closed — 15 fixed, 1
+> (P2-10) evaluated and kept by design (redemption repoint preserves audit
+> history; max(redeemed_at) over the merged identity is the correct D-018
+> reset anchor). The six testing gaps below are covered by
+> `tests/integration/review-hardening.test.ts` (12 regression tests, including
+> OTP lockout, security_invoker RLS proofs, and internal-grant revocations).
+> Suite at close: 124/124 vitest, 14/14 Playwright, tsc + brand clean.
+
 ## Reconciliation with the lost review
 
 | Lost finding | Verdict |

@@ -23,6 +23,10 @@ create table otp_codes (
   code        text not null,
   expires_at  timestamptz not null,
   consumed_at timestamptz,
+  -- Failed verify attempts against this code (review P1-3). Incremented
+  -- autonomously (the raise rolls the claim transaction back); claim_passport
+  -- refuses the code outright once attempts reach the lockout floor.
+  attempts    int not null default 0,
   created_at  timestamptz not null default now()
 );
 create index otp_codes_phone on otp_codes (phone, created_at desc);
@@ -61,6 +65,30 @@ begin
 exception when others then
   -- Never let the nag-write failure mask the CODE_RETIRED signal to the patron.
   null;
+end $$;
+
+-- ---------- helper: count a failed OTP verify in its OWN transaction (P1-3) ----------
+-- claim_passport raises OTP_INVALID on a wrong code, which rolls its transaction
+-- back — an in-transaction counter would never persist. Same dblink pattern as
+-- flag_reprint_autonomous. Deliberately NO exception swallow: if the autonomous
+-- write cannot happen, the claim fails closed rather than leaving the OTP
+-- endpoint brute-forceable (docs/solutions/fail-closed-dev-affordances.md).
+create or replace function otp_attempt_autonomous(p_otp_id uuid)
+returns void
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v_conninfo text;
+begin
+  v_conninfo := current_setting('app.reprint_conninfo', true);
+  if v_conninfo is null or v_conninfo = '' then
+    v_conninfo := 'host=db port=5432 dbname=' || current_database()
+                  || ' user=postgres password=postgres';
+  end if;
+
+  perform dblink_exec(
+    v_conninfo,
+    format('update public.otp_codes set attempts = attempts + 1 where id = %L', p_otp_id)
+  );
 end $$;
 
 -- ---------- helper: region-local "today" for the current season's region ----------
@@ -363,10 +391,16 @@ begin
     raise exception 'REGION_NOT_FOUND' using errcode = 'P0001';
   end if;
 
-  -- Find-or-create patron by phone (no auth user). Follow merges.
+  -- Find-or-create patron by phone (no auth user). Follow merges. A concurrent
+  -- create for the same new phone loses the `patrons.phone` UNIQUE race — catch
+  -- it and adopt the winner's row instead of leaking a raw 23505 (review P3-15).
   select coalesce(merged_into, id) into v_patron from patrons where phone = p_phone;
   if v_patron is null then
-    insert into patrons (phone) values (p_phone) returning id into v_patron;
+    begin
+      insert into patrons (phone) values (p_phone) returning id into v_patron;
+    exception when unique_violation then
+      select coalesce(merged_into, id) into v_patron from patrons where phone = p_phone;
+    end;
   end if;
 
   -- Mint a claim token only when the patron is unclaimed (no auth user yet).
@@ -473,6 +507,13 @@ end $$;
 
 -- ============================================================
 -- claim_passport — contract §2.3 (RPC). Merge per R3 / Art. XIV.
+--
+-- CONCURRENCY (review P1-1/P1-2/P2-8): the whole claim/merge is serialized
+-- per phone by an advisory xact lock, so two simultaneous claims of one phone
+-- run one-after-the-other — the second sees the first's committed state and
+-- takes the merge path instead of racing `patrons.phone` UNIQUE. The OTP
+-- consume is a single guarded UPDATE (no check-then-update window), and merge
+-- writes flatten `merged_into` chains so single-hop resolution stays canonical.
 -- ============================================================
 create or replace function claim_passport(p_phone text, p_otp text)
 returns jsonb
@@ -492,10 +533,16 @@ begin
     raise exception 'UNAUTHENTICATED' using errcode = 'P0001';
   end if;
 
-  -- Verify the OTP (unconsumed, unexpired). Most-recent matching row.
-  select id, expires_at, consumed_at into v_otp
+  -- Serialize all claims of this phone (released at commit/rollback).
+  perform pg_advisory_xact_lock(hashtextextended(p_phone, 0));
+
+  -- Verify against the LATEST code for the phone (a newer send invalidates
+  -- older codes), with a brute-force lockout (review P1-3): after 5 wrong
+  -- guesses the code is dead — request a fresh one. Failed guesses are counted
+  -- autonomously because the raise rolls this transaction back.
+  select id, code, expires_at, consumed_at, attempts into v_otp
   from otp_codes
-  where phone = p_phone and code = p_otp
+  where phone = p_phone
   order by created_at desc
   limit 1;
 
@@ -505,7 +552,21 @@ begin
   if v_otp.expires_at <= now() then
     raise exception 'OTP_EXPIRED' using errcode = 'P0001';
   end if;
-  update otp_codes set consumed_at = now() where id = v_otp.id;
+  if v_otp.attempts >= 5 then
+    raise exception 'RATE_LIMITED' using errcode = 'P0001';
+  end if;
+  if v_otp.code <> p_otp then
+    perform otp_attempt_autonomous(v_otp.id);  -- survives the rollback below
+    raise exception 'OTP_INVALID' using errcode = 'P0001';
+  end if;
+
+  -- Atomic consume (review P2-8): one guarded UPDATE, no read-then-write window.
+  -- (The advisory lock already serializes same-phone claims; this is depth.)
+  update otp_codes set consumed_at = now()
+   where id = v_otp.id and consumed_at is null;
+  if not found then
+    raise exception 'OTP_INVALID' using errcode = 'P0001';
+  end if;
 
   -- Caller's current patron (resolve-or-create; follows merges).
   select coalesce(merged_into, id) into v_current from patrons where auth_user_id = v_uid;
@@ -559,29 +620,45 @@ begin
            and w.id <> stamps.id
        );
 
-    -- Re-point other patron facts (best-effort; ignore unique collisions).
+    -- Re-point other patron facts. Non-colliding rows move to the winner;
+    -- colliding rows (the winner already holds the identical fact) are then
+    -- DELETED rather than left invisibly attached to the merged-away loser
+    -- (review P2-9). Stamps are the sacred history and are voided above —
+    -- impressions and unlocks are dedup'd derived facts, deleting a duplicate
+    -- loses nothing.
     update steer_impressions set patron_id = v_winner where patron_id = v_loser
       and not exists (
         select 1 from steer_impressions x
         where x.patron_id = v_winner and x.business_id = steer_impressions.business_id
           and x.local_date = steer_impressions.local_date and x.id <> steer_impressions.id
       );
+    delete from steer_impressions where patron_id = v_loser;
+
+    -- perk_redemptions repoint is deliberately UNCONDITIONAL (review P2-10
+    -- evaluated, kept): each redemption physically happened and is audit
+    -- history (Art. II who/what/when — never delete). After the repoint,
+    -- max(redeemed_at) over the unified identity is exactly the correct
+    -- since-last-redemption reset anchor (D-018).
     update perk_redemptions set patron_id = v_winner where patron_id = v_loser;
+
     update milestone_unlocks set patron_id = v_winner where patron_id = v_loser
       and not exists (
         select 1 from milestone_unlocks x
         where x.patron_id = v_winner and x.milestone_id = milestone_unlocks.milestone_id
           and x.id <> milestone_unlocks.id
       );
-    update patron_devices set patron_id = v_winner where patron_id = v_loser
-      and not exists (
-        select 1 from patron_devices x
-        where x.patron_id = v_winner and x.device_token = patron_devices.device_token
-          and x.id <> patron_devices.id
-      );
+    delete from milestone_unlocks where patron_id = v_loser;
 
-    -- Preserve the loser row; mark it merged.
+    -- device_token is globally UNIQUE, so a loser device can never collide
+    -- with a winner row — the repoint is total by construction.
+    update patron_devices set patron_id = v_winner where patron_id = v_loser;
+
+    -- Preserve the loser row; mark it merged. Then FLATTEN: any patron that
+    -- previously merged into the loser now points straight at the winner, so
+    -- the single-hop coalesce(merged_into, id) used everywhere stays canonical
+    -- (review P1-1 — no 2-hop chains can exist after this write).
     update patrons set merged_into = v_winner where id = v_loser;
+    update patrons set merged_into = v_winner where merged_into = v_loser and id <> v_winner;
     v_merged := array_append(v_merged, v_loser);
 
     -- The winner keeps the phone; adopt the caller's auth_user_id only if the
@@ -600,6 +677,13 @@ begin
     'linked_devices', v_devices,
     'claimed', true
   );
+exception
+  when unique_violation then
+    -- Defense in depth (review P1-2): the advisory lock should make a
+    -- `patrons.phone` collision unreachable, but if one slips through it maps
+    -- to a contract code the errors.js seam understands — never a raw 23505.
+    -- The rollback un-consumes the OTP, so the patron can simply retry.
+    raise exception 'INVALID_STATE' using errcode = 'P0001';
 end $$;
 
 -- ============================================================

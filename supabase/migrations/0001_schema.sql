@@ -208,7 +208,10 @@ create table regional_milestones (
   name       text not null,
   kind       milestone_kind not null,
   threshold  int not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Natural key so seed.sql's `on conflict do nothing` actually dedupes —
+  -- without it a re-seed silently duplicates every milestone (review P3-16).
+  unique (region_id, season_id, kind, threshold)
 );
 
 create table milestone_unlocks (
