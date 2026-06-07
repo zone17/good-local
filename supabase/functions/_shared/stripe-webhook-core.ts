@@ -15,16 +15,17 @@
 
 // Minimal structural type for the supabase-js query builder we use, so the
 // core stays SDK-version agnostic and Deno-importable without type deps.
+// Only the methods called directly off `from()` belong here — filters and
+// terminators (.eq/.single/.maybeSingle) chain off these `any` returns, and
+// listing them made the real SupabaseClient structurally unassignable (D-020
+// typecheck gate).
 export interface DbLike {
   from(table: string): {
-    select: (cols: string, opts?: unknown) => any;
-    insert: (values: unknown) => any;
-    update: (values: unknown) => any;
-    upsert: (values: unknown, opts?: unknown) => any;
+    select: (cols?: any, opts?: any) => any;
+    insert: (values: any) => any;
+    update: (values: any) => any;
+    upsert: (values: any, opts?: any) => any;
     delete: () => any;
-    eq: (col: string, val: unknown) => any;
-    maybeSingle: () => any;
-    single: () => any;
   };
 }
 

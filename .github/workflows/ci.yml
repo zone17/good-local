@@ -60,3 +60,56 @@ jobs:
           node-version: 22
       - name: Check brand compliance
         run: node scripts/check-brand.mjs
+
+  # 4) Typecheck: tsc --noEmit over tests + configs (the "lint" gate T003
+  #    promised — vitest transpiles without typechecking, so this is the only
+  #    thing that catches type errors in the suite).
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install workspace deps
+        run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+  # 5) E2E (T003/T034/T048/T060): the launch-critical Playwright paths —
+  #    check-in (SC-002), steer attribution (SC-006), and a11y AA + tap
+  #    targets (Art. IX) — against the local Supabase stack. Chromium project
+  #    only (the slow3g project applies CDP throttling per-test and is a
+  #    superset in runtime, not coverage).
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install workspace deps
+        run: npm ci
+      - name: Install app deps
+        run: cd app && npm ci
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start Supabase local stack
+        run: supabase start
+      - name: Apply migrations + seed
+        run: supabase db reset --debug
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run Playwright (chromium)
+        run: npx playwright test --project=chromium
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: test-results/
+          retention-days: 7

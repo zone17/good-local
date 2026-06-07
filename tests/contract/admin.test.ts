@@ -67,7 +67,7 @@ async function makePendingBusiness(
       email_confirm: true,
     } as never)
     .catch(() => undefined);
-  let resolvedOwner = ownerUserId;
+  let resolvedOwner: string = ownerUserId;
   {
     const { data } = await svc.auth.admin.listUsers();
     const u = data?.users?.find((x) => x.email === `pend-${slug}-${RUN}@test`);

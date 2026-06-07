@@ -37,7 +37,20 @@ const STAMP_DERIVED = [
   "steered_first_visit_rate",
 ];
 
-function metricsByName(rows: Array<{ metric: string }>) {
+// Row shape per contract §4.4 (read_gate_metrics).
+type GateMetricRow = {
+  metric: string;
+  value: number | string | null;
+  n: number;
+  threshold: { target?: number | string; kill?: number | string; sample_floor?: number };
+  kill_floor: number | string | null;
+  sample_floor: number | null;
+  validity: string;
+  valid: boolean;
+  verdict_eligibility: string;
+};
+
+function metricsByName(rows: GateMetricRow[]) {
   return Object.fromEntries(rows.map((r) => [r.metric, r]));
 }
 
