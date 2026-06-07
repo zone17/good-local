@@ -4,6 +4,14 @@ on:
   push:
   pull_request:
 
+# The Supabase CLI posts anonymous telemetry to PostHog on `db reset`; when that
+# endpoint 502s the step exits non-zero and fails the run (flaked ~5 runs on
+# 2026-06-07 with zero code involvement). Opt out everywhere — DO_NOT_TRACK is
+# the cross-tool standard; SUPABASE_TELEMETRY=0 is the CLI-specific belt.
+env:
+  DO_NOT_TRACK: "1"
+  SUPABASE_TELEMETRY: "0"
+
 jobs:
   # 1) Frontend: build the SPA + check-in entry, then enforce the SC-008 bundle
   #    budgets (check-in entry <= 60 KB gzipped, main entry <= 130 KB).
