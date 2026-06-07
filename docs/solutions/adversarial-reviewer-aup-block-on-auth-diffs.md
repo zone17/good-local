@@ -52,3 +52,15 @@ attack tooling when the code under review is authentication code. Pick
 defense-framed personas for auth/OTP/RLS diffs, and treat review findings as
 artifacts to flush to disk immediately — the review's value is the persisted
 findings, not the conversation. (Crashed review session, 2026-06-07.)
+
+## Now enforced by hook (2026-06-07)
+
+Fix #1 is no longer guidance-only — a `PreToolUse[Agent]` hook,
+`~/.claude/hooks/enforcement/adversarial-reviewer-aup-guard.sh`, hard-blocks
+any attack-framed adversarial-review persona when EITHER the agent prompt OR
+the branch diff vs `main` matches an auth-sensitive pattern (otp, claim_passport,
+rls, auth.uid, security definer, session, webhook secret, rate limit, brute
+force, account takeover, permission check). The deny message redirects to
+ce-correctness-reviewer + ce-security-reviewer. Defense-framed personas and
+non-auth diffs pass untouched. Registered in `~/.claude/settings.json` under
+`PreToolUse` matcher `Agent`.
