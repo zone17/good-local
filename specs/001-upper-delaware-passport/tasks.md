@@ -24,12 +24,12 @@ Per plan.md structure: `app/` (frontend, two Vite entries), `supabase/` (migrati
 
 **Purpose**: project initialization per plan structure
 
-- [ ] T001 Initialize Supabase project scaffolding: `supabase/config.toml`, empty `supabase/migrations/`, `supabase/functions/`, `supabase/seed/` (supabase CLI init, local stack boots)
-- [ ] T002 [P] Test scaffolding: Vitest config `vitest.config.ts`, dirs `tests/contract/`, `tests/integration/`, `tests/unit/`; Playwright config `playwright.config.ts` + `tests/e2e/`
-- [ ] T003 [P] CI pipeline `.github/workflows/ci.yml`: install, lint, vitest, playwright (smoke), and size-limit gates (check-in entry ≤60KB gz, main ≤130KB gz — R7, enforced failing)
-- [ ] T004 [P] Frontend platform prep in `app/`: add `@supabase/supabase-js`, create `app/.env.example` (SUPABASE_URL, SUPABASE_ANON_KEY, STRIPE_PUBLISHABLE_KEY names only), add second Vite entry `app/checkin.html` in `app/vite.config.js` (R7)
-- [ ] T005 [P] Auth session module `app/src/lib/auth.ts`: anon-patron bootstrap on first load, owner email sign-in, admin role detection (contexts per contracts §1.1)
-- [ ] T006 [P] Error envelope + machine codes module `app/src/lib/errors.ts` from contracts §7 (clients branch on `code`, never message)
+- [x] T001 Initialize Supabase project scaffolding: `supabase/config.toml`, empty `supabase/migrations/`, `supabase/functions/`, `supabase/seed/` (supabase CLI init, local stack boots)
+- [x] T002 [P] Test scaffolding: Vitest config `vitest.config.ts`, dirs `tests/contract/`, `tests/integration/`, `tests/unit/`; Playwright config `playwright.config.ts` + `tests/e2e/`
+- [x] T003 [P] CI pipeline `.github/workflows/ci.yml`: install, lint, vitest, playwright (smoke), and size-limit gates (check-in entry ≤60KB gz, main ≤130KB gz — R7, enforced failing)
+- [x] T004 [P] Frontend platform prep in `app/`: add `@supabase/supabase-js`, create `app/.env.example` (SUPABASE_URL, SUPABASE_ANON_KEY, STRIPE_PUBLISHABLE_KEY names only), add second Vite entry `app/checkin.html` in `app/vite.config.js` (R7)
+- [x] T005 [P] Auth session module `app/src/lib/auth.ts`: anon-patron bootstrap on first load, owner email sign-in, admin role detection (contexts per contracts §1.1)
+- [x] T006 [P] Error envelope + machine codes module `app/src/lib/errors.ts` from contracts §7 (clients branch on `code`, never message)
 
 ---
 
@@ -39,15 +39,15 @@ Per plan.md structure: `app/` (frontend, two Vite entries), `supabase/` (migrati
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T007 Migration `supabase/migrations/0001_schema.sql`: all tables per data-model §2 — regions, towns, seasons, businesses, subscriptions, perks, check_in_codes, patrons + patron_devices, stamps (XOR attribution CHECK + UNIQUE(patron,business,local_date) per §3 Art. II), staff_entries, perk_redemptions, founding_picks, steer_impressions, regional_milestones + milestone_unlocks, wallet_pass_instances, gate_thresholds + gate_metric_snapshots; validation rules per §6
-- [ ] T008 Migration `supabase/migrations/0002_rls.sql`: enable RLS everywhere + the full policy matrix per data-model §3 Art. V (owner-scoped, patron-own-rows, admin, service)
-- [ ] T009 [P] Migration `supabase/migrations/0003_views.sql`: `verified_regulars_per_business`, the 6 gate-metric views, owner dashboard aggregate views per data-model §5 (all excluding trust-invalid stamps)
-- [ ] T010 [P] Seed `supabase/seed/seed.sql`: Upper Delaware region, 12 towns, season-one window, `gate_thresholds` rows from the discovery brief, demo business "The Heron" (approved, one perk, one current code) per quickstart
-- [ ] T011 Integration test harness `tests/integration/helpers.ts`: role-context clients (anon-patron / claimed patron / owner / admin / service JWTs) against Supabase local
-- [ ] T012 [P] RLS role-matrix privacy test `tests/integration/rls-privacy.test.ts` (Art. V / SC-005): as owner A, every read path for patron activity at business B returns zero rows — enumerated per data-model matrix; written now, extended in US6
-- [ ] T013 Typed API client `app/src/lib/api.ts`: request/response types + call stubs for all 27 verbs from contracts/api.md, same data shapes as `app/src/data.js` so screens swap seam-only
-- [ ] T014 [P] Migration `supabase/migrations/0004_rotation.sql`: rotation function (current→grace→retired, one-current partial unique index) + pg_cron schedule per business (default weekly, 72h grace — R2)
-- [ ] T015 [P] Correlation/trace helper `app/src/lib/trace.ts` + structured client log conventions (Art. XV/XXIX-light)
+- [x] T007 Migration `supabase/migrations/0001_schema.sql`: all tables per data-model §2 — regions, towns, seasons, businesses, subscriptions, perks, check_in_codes, patrons + patron_devices, stamps (XOR attribution CHECK + UNIQUE(patron,business,local_date) per §3 Art. II), staff_entries, perk_redemptions, founding_picks, steer_impressions, regional_milestones + milestone_unlocks, wallet_pass_instances, gate_thresholds + gate_metric_snapshots; validation rules per §6
+- [x] T008 Migration `supabase/migrations/0002_rls.sql`: enable RLS everywhere + the full policy matrix per data-model §3 Art. V (owner-scoped, patron-own-rows, admin, service)
+- [x] T009 [P] Migration `supabase/migrations/0003_views.sql`: `verified_regulars_per_business`, the 6 gate-metric views, owner dashboard aggregate views per data-model §5 (all excluding trust-invalid stamps)
+- [x] T010 [P] Seed `supabase/seed/seed.sql`: Upper Delaware region, 12 towns, season-one window, `gate_thresholds` rows from the discovery brief, demo business "The Heron" (approved, one perk, one current code) per quickstart
+- [x] T011 Integration test harness `tests/integration/helpers.ts`: role-context clients (anon-patron / claimed patron / owner / admin / service JWTs) against Supabase local
+- [x] T012 [P] RLS role-matrix privacy test `tests/integration/rls-privacy.test.ts` (Art. V / SC-005): as owner A, every read path for patron activity at business B returns zero rows — enumerated per data-model matrix; written now, extended in US6
+- [x] T013 Typed API client `app/src/lib/api.ts`: request/response types + call stubs for all 27 verbs from contracts/api.md, same data shapes as `app/src/data.js` so screens swap seam-only
+- [x] T014 [P] Migration `supabase/migrations/0004_rotation.sql`: rotation function (current→grace→retired, one-current partial unique index) + pg_cron schedule per business (default weekly, 72h grace — R2)
+- [x] T015 [P] Correlation/trace helper `app/src/lib/trace.ts` + structured client log conventions (Art. XV/XXIX-light)
 
 **Checkpoint**: schema + policies + views + seam ready — user stories can start (US1 and US2 in parallel if staffed)
 

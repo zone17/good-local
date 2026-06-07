@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # 1) Frontend: build the SPA + check-in entry, then enforce the SC-008 bundle
+  #    budgets (check-in entry <= 60 KB gzipped, main entry <= 130 KB).
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install app deps
+        run: cd app && npm ci
+      - name: Build app
+        run: cd app && npm run build
+      - name: Enforce bundle budgets
+        run: node .github/scripts/check-size.mjs
+
+  # 2) Tests: spin up the local Supabase stack, apply migrations + seed via
+  #    `db reset`, export the stack keys, then run the vitest suites
+  #    (contract + integration RLS proofs + unit).
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install workspace deps
+        run: npm ci
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start Supabase local stack
+        run: supabase start
+      - name: Export stack keys
+        run: supabase status -o env >> "$GITHUB_ENV"
+      - name: Apply migrations + seed
+        run: supabase db reset --debug
+      - name: Run vitest
+        run: npx vitest run
+
+  # 3) Brand: placeholder until brand checks land in T059.
+  brand:
+    name: brand
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder
+        run: echo "brand checks land in T059"
