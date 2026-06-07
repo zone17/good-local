@@ -1,0 +1,108 @@
+/* ---------------------------------------------------------------
+   Good Local — color tokens
+   ---------------------------------------------------------------
+   Palette philosophy: a river-town palette. Wet-pine green for
+   trust + nature; warm paper cream for backgrounds (recall the
+   cardstock of a national-park passport); stamp-ink red for the
+   moment of earning; ochre for sun-on-water accents; warm ink
+   for type. Slate-blue is the river itself — used sparingly for
+   water-related surfaces (maps, lock-screen pass).
+
+   Contrast: all `--text-*` over `--surface-*` pairs are tuned
+   for WCAG AA at 16px, and AAA on the primary body pair. The
+   product runs in direct sunlight with wet hands — we err
+   toward the high side of contrast everywhere.
+   --------------------------------------------------------------- */
+
+:root {
+  /* -- Pine (primary, the "Good Local green") ------------------ */
+  --pine-1000: #0E2419; /* darkest — for ink-on-pine surfaces  */
+  --pine-900:  #15392A;
+  --pine-800:  #1B4A37;
+  --pine-700:  #234D3A; /* primary brand — wordmark, CTAs       */
+  --pine-600:  #2F5E48;
+  --pine-500:  #467560; /* mid — secondary surfaces             */
+  --pine-300:  #9EB6A8;
+  --pine-200:  #C4D2C8;
+  --pine-100:  #DDE6DE;
+  --pine-50:   #EBF0EC; /* wash — tinted surfaces               */
+
+  /* -- Stamp ink (the "you earned it" red-brown) -------------- */
+  --stamp-900: #5C1A10;
+  --stamp-700: #8E2A1C; /* canonical stamp ink                  */
+  --stamp-600: #A8331F;
+  --stamp-500: #B83E2A;
+  --stamp-300: #DFA597;
+  --stamp-100: #F1D9D1;
+  --stamp-50:  #F8E9E3;
+
+  /* -- Ochre (sun on water, secondary accent) ----------------- */
+  --ochre-900: #6B3D11;
+  --ochre-700: #A45F1B;
+  --ochre-500: #C57939; /* canonical ochre — perk highlights    */
+  --ochre-300: #E2B27A;
+  --ochre-100: #F2DDB9;
+  --ochre-50:  #F8EBCF;
+
+  /* -- River (slate-blue, water surfaces, used sparingly) ----- */
+  --river-900: #0F2F3D;
+  --river-700: #2B5A6E;
+  --river-500: #5A8BA0;
+  --river-300: #A4C0CD;
+  --river-100: #D6E4EB;
+  --river-50:  #E8F0F4;
+
+  /* -- Paper (warm cream backgrounds) ------------------------- */
+  --paper-50:  #FBF8F1; /* lightest — page background           */
+  --paper-100: #F6F1E4; /* canonical cream                      */
+  --paper-200: #ECE4D0; /* darker cream — section divides       */
+  --paper-300: #DCD0B0; /* kraft — pass back, secondary surface */
+  --paper-400: #BFAF85; /* kraft, deeper                        */
+
+  /* -- Ink (warm-leaning neutrals, NOT pure greys) ------------ */
+  --ink-1000: #1A1612; /* body text default                     */
+  --ink-900:  #2A241C;
+  --ink-700:  #3D352B; /* secondary text                        */
+  --ink-500:  #6E665A; /* tertiary / placeholder                */
+  --ink-400:  #8B8275;
+  --ink-300:  #B3AB9E;
+  --ink-200:  #D1CAB8;
+  --ink-100:  #E2DCC9;
+  --ink-50:   #EFEADB;
+
+  /* -- Pure white / black escape hatches ---------------------- */
+  --white:    #FFFFFF;
+  --black:    #000000;
+
+  /* -- Semantic ----------------------------------------------- */
+  --success:  var(--pine-700);
+  --warning:  var(--ochre-700);
+  --danger:   var(--stamp-700);
+  --info:     var(--river-700);
+
+  /* -- Semantic surfaces (the names UI should use) ------------ */
+  --surface-page:        var(--paper-50);
+  --surface-page-warm:   var(--paper-100);
+  --surface-card:        var(--white);
+  --surface-card-kraft:  var(--paper-200);
+  --surface-pass:        var(--pine-700);   /* wallet pass front */
+  --surface-pass-ink:    var(--paper-100);  /* text on pass      */
+  --surface-stamp:       var(--stamp-700);  /* earned stamp      */
+  --surface-inverse:     var(--pine-1000);
+
+  /* -- Semantic text ------------------------------------------ */
+  --text-primary:    var(--ink-1000);
+  --text-secondary:  var(--ink-700);
+  --text-tertiary:   var(--ink-500);
+  --text-on-pine:    var(--paper-100);
+  --text-on-stamp:   var(--paper-100);
+  --text-link:       var(--pine-700);
+
+  /* -- Borders ------------------------------------------------- */
+  --border-hairline: var(--ink-200);
+  --border-rule:     var(--ink-300);
+  --border-strong:   var(--ink-1000);
+
+  /* -- Focus ring (high-vis, outdoor-readable) ---------------- */
+  --focus-ring: 0 0 0 3px var(--ochre-300), 0 0 0 5px var(--ink-1000);
+}

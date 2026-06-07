@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Good Local — Icon, Stamp & Pass variations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: var(--paper-50); font-family: var(--font-body); color: var(--text-primary); }
+    #root { height: 100vh; }
+    .label-eyebrow {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.16em; color: var(--ink-500);
+    }
+    .note {
+      font-size: 12px; color: var(--ink-500); line-height: 1.45;
+      max-width: 240px; text-wrap: pretty;
+    }
+    .ios-cluster {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+      width: 100%;
+    }
+    .ios-cluster .slot { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .ios-cluster .name { font-size: 11px; color: var(--ink-700); font-weight: 500; }
+    .stamp-row { display: flex; gap: 24px; align-items: center; justify-content: center; width: 100%; }
+    .stamp-grid { display: grid; grid-template-columns: repeat(5, 60px); gap: 10px; }
+    .pass-stage {
+      display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
+      background: var(--paper-200);
+      padding: 20px; box-sizing: border-box;
+    }
+    .pass-stage--dark { background: var(--ink-1000); }
+
+    /* ============================================================
+       Palette A/B — river-led override
+       ============================================================
+       Wrapping a subtree in `.gl-palette-river` remaps every
+       `--pine-*` reference to its river counterpart. Buttons,
+       wallet passes, badges, eyebrows, progress bars — anything
+       reading from the pine scale becomes slate-blue automatically.
+       Pine moves into secondary-accent territory (kept in the
+       stamp + ochre + ink families, plus an opt-in `--accent-*`). */
+    .gl-palette-river {
+      --pine-50:   var(--river-50);
+      --pine-100:  var(--river-100);
+      --pine-200:  var(--river-300);
+      --pine-300:  var(--river-300);
+      --pine-500:  var(--river-500);
+      --pine-600:  var(--river-500);
+      --pine-700:  var(--river-700);
+      --pine-800:  var(--river-900);
+      --pine-900:  var(--river-900);
+      --pine-1000: var(--river-900);
+      /* Pine demoted to a named secondary — for badges that
+         explicitly want the original forest tone. */
+      --accent-700: #234D3A;
+      --accent-100: #DDE6DE;
+    }
+
+    .ab-stack {
+      display: flex; flex-direction: column; gap: 18px;
+      padding: 22px; width: 100%; height: 100%; box-sizing: border-box;
+      background: var(--paper-50);
+    }
+    .ab-stack h2 {
+      margin: 0; font-family: var(--font-display); font-size: 22px;
+      font-weight: 600; letter-spacing: -0.012em;
+    }
+    .ab-stack .ab-eyebrow {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.16em; color: var(--ink-500);
+    }
+    .ab-stack .ab-brand-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px; border-radius: 10px;
+      background: var(--pine-700); color: var(--paper-100);
+    }
+    .ab-stack .ab-brand-bar .word {
+      font-family: var(--font-display); font-size: 22px; font-weight: 600;
+      letter-spacing: -0.012em;
+    }
+    .ab-stack .ab-pass-stage {
+      display: grid; place-items: center;
+      padding: 18px; background: var(--paper-200); border-radius: 10px;
+    }
+    .ab-stack .ab-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ab-stack .ab-color-strip {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 0;
+      border-radius: 8px; overflow: hidden; height: 38px;
+    }
+    .ab-stack .ab-color-strip > div {
+      display: flex; align-items: flex-end; padding: 4px 6px;
+      font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.04em;
+    }
+    .ab-stack .ab-stat-row { display: flex; gap: 24px; align-items: flex-start; }
+    .ab-stack .ab-card-sample {
+      padding: 14px 16px; border-radius: 10px; background: var(--white);
+      box-shadow: var(--shadow-card);
+    }
+    .surface-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%;
+    }
+    .surface-row .tile {
+      aspect-ratio: 1; border-radius: 22%;
+      display: grid; place-items: center; padding: 12%;
+      box-shadow: 0 1px 2px rgb(26 22 18 / 0.08), 0 8px 16px rgb(26 22 18 / 0.06);
+    }
+    .surface-row .tile svg { width: 100%; height: 100%; display: block; }
+    .surface-row .lab {
+      grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+      font-family: var(--font-mono); font-size: 10px; color: var(--ink-500);
+      text-align: center; letter-spacing: 0.06em; text-transform: uppercase;
+      margin-top: 4px;
+    }
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="../_ds_bundle.js"></script>
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="IconVariants.jsx"></script>
+  <script type="text/babel" src="IconVariants2.jsx"></script>
+  <script type="text/babel" src="IconVariants3.jsx"></script>
+  <script type="text/babel" src="StampVariants.jsx"></script>
+  <script type="text/babel" src="PassVariants.jsx"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="env,react">
+    const { DesignCanvas, DCSection, DCArtboard } = window;
+    const { WalletPass, Button, Badge, Stat, ProgressMeter, StampGrid, Stamp, SealMark, Tag, Notice, Icon } = window.GoodLocalDesignSystem_db344c;
+
+    // ---- Palette A/B sample stack ----
+    function ABStack({ label }) {
+      return (
+        <div className="ab-stack">
+          <div>
+            <span className="ab-eyebrow">{label}</span>
+            <h2>Good Local — brand surfaces</h2>
+          </div>
+
+          {/* Brand bar — header surface */}
+          <div className="ab-brand-bar">
+            <SealMark size={32} style={{ color: "var(--paper-100)" }}/>
+            <div className="word">Good Local</div>
+            <div style={{ flex: 1 }}/>
+            <Badge variant="ochre">Founding pick</Badge>
+          </div>
+
+          {/* Wallet pass */}
+          <div className="ab-pass-stage">
+            <div style={{ transform: "scale(0.78)", transformOrigin: "center", margin: "-44px 0" }}>
+              <WalletPass
+                businessName="The Heron"
+                region="Narrowsburg, NY"
+                count={3} total={5}
+                perkLabel="The Regular's Pour"
+                perkSub="Two more visits, on the house"
+                serial="UDP·NRWB·a7q9" expires="11·2026"
+              />
+            </div>
+          </div>
+
+          {/* Stamp grid — shows perk progress */}
+          <div className="ab-card-sample">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+              <span style={{ fontWeight: 600, fontSize: 14 }}>The Regular's Pour</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-500)" }}>3 / 5</span>
+            </div>
+            <ProgressMeter count={3} total={5} remainingLabel="2 visits to go"/>
+          </div>
+
+          {/* Buttons */}
+          <div className="ab-controls">
+            <Button>Add to wallet</Button>
+            <Button variant="secondary">Skip</Button>
+            <Button variant="ghost">Help</Button>
+          </div>
+
+          {/* Badges */}
+          <div className="ab-controls">
+            <Badge variant="pine">Verified regular</Badge>
+            <Badge variant="solid-pine">Perk ready</Badge>
+            <Badge variant="stamp">Stamp · earned</Badge>
+            <Badge variant="ochre">Founding pick</Badge>
+            <Badge variant="river">Riverside</Badge>
+            <Badge variant="solid-pine">Open now</Badge>
+          </div>
+
+          {/* Stat row */}
+          <div className="ab-stat-row">
+            <Stat label="Repeat-visit rate" value="42" suffix="%" delta="+6 pts" deltaDirection="up"/>
+            <Stat label="Regulars" value="28" delta="+6 this week"/>
+          </div>
+
+          {/* Notice */}
+          <Notice tone="pine" icon={<Icon name="check" size={18}/>} title="Pass added">
+            Your Upper Delaware Passport is in your wallet.
+          </Notice>
+
+          {/* Color strip — primary scale only */}
+          <div>
+            <span className="ab-eyebrow" style={{ display: "block", marginBottom: 6 }}>Primary scale</span>
+            <div className="ab-color-strip">
+              <div style={{ background: "var(--pine-1000)", color: "var(--paper-100)" }}>1000</div>
+              <div style={{ background: "var(--pine-900)",  color: "var(--paper-100)" }}>900</div>
+              <div style={{ background: "var(--pine-700)",  color: "var(--paper-100)" }}>700 ★</div>
+              <div style={{ background: "var(--pine-500)",  color: "var(--paper-100)" }}>500</div>
+              <div style={{ background: "var(--pine-300)",  color: "var(--ink-1000)" }}>300</div>
+              <div style={{ background: "var(--pine-100)",  color: "var(--ink-1000)" }}>100</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function IconShelf({ Comp, name, schemeNote }) {
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: 24, width: "100%", height: "100%", boxSizing: "border-box" }}>
+          {/* Big hero icon */}
+          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            <div style={{ width: 132, height: 132, borderRadius: "30%", overflow: "hidden", boxShadow: "0 2px 4px rgb(26 22 18 / 0.10), 0 14px 30px rgb(26 22 18 / 0.14)" }}>
+              <Comp/>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+              <span className="label-eyebrow">{schemeNote}</span>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, lineHeight: 1.1, letterSpacing: "-0.01em" }}>
+                {name}
+              </span>
+            </div>
+          </div>
+          {/* iOS cluster sample */}
+          <div className="ios-cluster">
+            {[64, 60, 60, 60].map((s, i) => (
+              <div key={i} className="slot">
+                <div style={{ width: s, height: s, borderRadius: "22%", overflow: "hidden", boxShadow: "0 1px 2px rgb(26 22 18 / 0.10)" }}>
+                  <Comp/>
+                </div>
+                <span className="name">{["Good Local", "Wallet", "Maps", "Mail"][i]}</span>
+              </div>
+            ))}
+          </div>
+          {/* Three surfaces — small tiles to show scale resilience */}
+          <div className="surface-row">
+            <div className="tile" style={{ background: "var(--paper-50)" }}><div style={{ width: "100%", height: "100%", borderRadius: "22%", overflow: "hidden" }}><Comp/></div></div>
+            <div className="tile" style={{ background: "var(--paper-300)" }}><div style={{ width: "100%", height: "100%", borderRadius: "22%", overflow: "hidden" }}><Comp/></div></div>
+            <div className="tile" style={{ background: "var(--ink-1000)" }}><div style={{ width: "100%", height: "100%", borderRadius: "22%", overflow: "hidden" }}><Comp/></div></div>
+            <div className="lab"><span>paper</span><span>kraft</span><span>ink</span></div>
+          </div>
+        </div>
+      );
+    }
+
+    function StampShelf({ Comp, name, note, props }) {
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, padding: 28, width: "100%", height: "100%", boxSizing: "border-box", background: "var(--paper-50)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+            <div>
+              <span className="label-eyebrow">Stamp impression</span>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, lineHeight: 1.1, marginTop: 4, letterSpacing: "-0.01em" }}>{name}</div>
+            </div>
+          </div>
+          {/* Big stamp on cream */}
+          <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>
+            <Comp {...(props || {})}/>
+          </div>
+          <p className="note" style={{ maxWidth: "100%" }}>{note}</p>
+          {/* In-grid sample at 56px — what it'd look like as a stamp count */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <span className="label-eyebrow">In a 5-stamp grid · 56px</span>
+            <div className="stamp-grid">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} style={{ width: 56, height: 56, display: "grid", placeItems: "center" }}>
+                  {i < 3 ? <Comp {...(props || {})} size={56} rotate={[-3,2,-2,3,-1][i]}/> :
+                    <div style={{ width: 56, height: 56, borderRadius: 3, border: "1.5px dashed var(--ink-300)" }}/>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function PassStage({ Comp, name, note, dark }) {
+      return (
+        <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
+          <div style={{ padding: "18px 22px 8px", background: "var(--paper-50)" }}>
+            <span className="label-eyebrow">Wallet pass</span>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, lineHeight: 1.15, marginTop: 4, letterSpacing: "-0.012em" }}>{name}</div>
+          </div>
+          <div className={dark ? "pass-stage pass-stage--dark" : "pass-stage"} style={{ flex: 1 }}>
+            <Comp/>
+          </div>
+          <div style={{ padding: "14px 22px 18px", background: "var(--paper-50)", borderTop: "1px solid var(--ink-100)" }}>
+            <p className="note" style={{ maxWidth: "100%" }}>{note}</p>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      return (
+        <DesignCanvas title="Icons · Stamps · Wallet passes — 59 NP-poster inspired" subtitle="Side-by-side directions. Open any artboard fullscreen with the focus button (↗).">
+          <DCSection id="palette-ab" title="Palette A/B — pine-led vs river-led" subtitle="Same components, same content. Right column wraps everything in `.gl-palette-river` which remaps every --pine-* token to its --river-* counterpart. Lets you see if slate-blue should be the master brand color.">
+            <DCArtboard id="ab-pine" label="A · Pine-led (current)" width={520} height={1280}>
+              <ABStack label="Pine-led · current"/>
+            </DCArtboard>
+            <DCArtboard id="ab-river" label="B · River-led (alt)" width={520} height={1280}>
+              <div className="gl-palette-river" style={{ width: "100%", height: "100%" }}>
+                <ABStack label="River-led · alt"/>
+              </div>
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="icons-tactile" title="App icons — tactile / product-literal (round 3)" subtitle="Different direction: things you can touch, count, or read off the side of a building. Tally marks, hand-stamped impressions, pennants, shop signs, dog-eared passport pages, awnings.">
+            <DCArtboard id="ic-tally-pine" label="M · Tally Mark — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconTallyMark scheme="pine"/>} name="Tally Mark" schemeNote="IIII / · most product-honest"/>
+            </DCArtboard>
+            <DCArtboard id="ic-tally-kraft" label="M · Tally Mark — kraft" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconTallyMark scheme="kraft"/>} name="Tally Mark" schemeNote="Stamp ink on kraft"/>
+            </DCArtboard>
+            <DCArtboard id="ic-tally-river" label="M · Tally Mark — river" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconTallyMark scheme="river"/>} name="Tally Mark" schemeNote="River-led scheme"/>
+            </DCArtboard>
+            <DCArtboard id="ic-stamp-paper" label="N · Hand-Stamped — paper" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconHandStamped scheme="paper"/>} name="Hand-Stamped" schemeNote="Imperfect / hand-pressed"/>
+            </DCArtboard>
+            <DCArtboard id="ic-stamp-pine" label="N · Hand-Stamped — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconHandStamped scheme="pine"/>} name="Hand-Stamped" schemeNote="Ochre ink on pine"/>
+            </DCArtboard>
+            <DCArtboard id="ic-pennant-pine" label="O · Pennant — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconPennant scheme="pine"/>} name="Pennant" schemeNote="Good local was here · founding"/>
+            </DCArtboard>
+            <DCArtboard id="ic-pennant-river" label="O · Pennant — river" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconPennant scheme="river"/>} name="Pennant" schemeNote="River-led scheme"/>
+            </DCArtboard>
+            <DCArtboard id="ic-sign-pine" label="P · Shop Sign — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconShopSign scheme="pine"/>} name="Shop Sign" schemeNote="Hanging hand-painted plaque"/>
+            </DCArtboard>
+            <DCArtboard id="ic-sign-river" label="P · Shop Sign — river" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconShopSign scheme="river"/>} name="Shop Sign" schemeNote="River-led scheme"/>
+            </DCArtboard>
+            <DCArtboard id="ic-page-pine" label="Q · Folded Pass — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconFoldedPass scheme="pine"/>} name="Folded Pass" schemeNote="Most literally passport"/>
+            </DCArtboard>
+            <DCArtboard id="ic-page-ink" label="Q · Folded Pass — ink" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconFoldedPass scheme="ink"/>} name="Folded Pass" schemeNote="On ink-black surface"/>
+            </DCArtboard>
+            <DCArtboard id="ic-awning-pine" label="R · Awning — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconAwning scheme="pine"/>} name="Awning" schemeNote="Main-street storefront"/>
+            </DCArtboard>
+            <DCArtboard id="ic-awning-river" label="R · Awning — river" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconAwning scheme="river"/>} name="Awning" schemeNote="River-led scheme"/>
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="icons-universal" title="App icons — universal (works nationwide)" subtitle="Region-neutral directions. No mountains/rivers tied to one geography — these scale to any community the brand goes to.">
+            <DCArtboard id="ic-g-pine" label="G · G Monogram — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconGMonogram scheme="pine"/>} name="G Monogram" schemeNote="Varsity letter · most identity"/>
+            </DCArtboard>
+            <DCArtboard id="ic-g-river" label="G · G Monogram — river" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconGMonogram scheme="river"/>} name="G Monogram" schemeNote="River-led scheme"/>
+            </DCArtboard>
+            <DCArtboard id="ic-g-kraft" label="G · G Monogram — kraft" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconGMonogram scheme="kraft"/>} name="G Monogram" schemeNote="Kraft cardstock"/>
+            </DCArtboard>
+            <DCArtboard id="ic-stamped" label="H · Stamped Moment — paper" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconStampedMoment scheme="paper"/>} name="Stamped Moment" schemeNote="The act of being stamped"/>
+            </DCArtboard>
+            <DCArtboard id="ic-stamped-pine" label="H · Stamped Moment — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconStampedMoment scheme="pine"/>} name="Stamped Moment" schemeNote="Ochre ink on pine"/>
+            </DCArtboard>
+            <DCArtboard id="ic-pin" label="I · Waypoint Pin — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconWaypointPin scheme="pine"/>} name="Waypoint Pin" schemeNote="Map pin + stamp · most discovery"/>
+            </DCArtboard>
+            <DCArtboard id="ic-pin-river" label="I · Waypoint Pin — river" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconWaypointPin scheme="river"/>} name="Waypoint Pin" schemeNote="River-led scheme"/>
+            </DCArtboard>
+            <DCArtboard id="ic-door-kraft" label="J · Welcome Doorway — kraft" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconWelcomeDoor scheme="kraft"/>} name="Welcome Doorway" schemeNote="Walk in · locally yours"/>
+            </DCArtboard>
+            <DCArtboard id="ic-door-pine" label="J · Welcome Doorway — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconWelcomeDoor scheme="pine"/>} name="Welcome Doorway" schemeNote="Pine doorway · ochre knob"/>
+            </DCArtboard>
+            <DCArtboard id="ic-loop" label="K · Return Loop — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconReturnLoop scheme="pine"/>} name="Return Loop" schemeNote="Most abstract · the act of being a regular"/>
+            </DCArtboard>
+            <DCArtboard id="ic-loop-river" label="K · Return Loop — river" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconReturnLoop scheme="river"/>} name="Return Loop" schemeNote="River-led scheme"/>
+            </DCArtboard>
+            <DCArtboard id="ic-sun" label="L · Sun Crest — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconSunCrest scheme="pine"/>} name="Sun Crest" schemeNote="Rising sun · welcome-mat read"/>
+            </DCArtboard>
+            <DCArtboard id="ic-sun-river" label="L · Sun Crest — river" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconSunCrest scheme="river"/>} name="Sun Crest" schemeNote="River sky · ochre sun"/>
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="icons" title="App icons — regional (Upper Delaware specific)" subtitle="The first batch — beautiful but landscape-tied. Probably keep one of these as a season-specific or region-specific variant rather than the master mark.">
+            <DCArtboard id="ic-sunrise-pine" label="A · Sunrise Layers — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconSunriseLayers scheme="pine"/>} name="Sunrise Layers" schemeNote="Pine sky · Ochre sun"/>
+            </DCArtboard>
+            <DCArtboard id="ic-sunrise-river" label="A · Sunrise Layers — river" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconSunriseLayers scheme="river"/>} name="Sunrise Layers" schemeNote="River sky · Ochre sun"/>
+            </DCArtboard>
+            <DCArtboard id="ic-river-bend" label="B · River Bend — river" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconRiverBend scheme="river"/>} name="River Bend" schemeNote="Cartographic · Slate-blue"/>
+            </DCArtboard>
+            <DCArtboard id="ic-single-peak" label="C · Single Peak — pine" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconSinglePeak scheme="pine"/>} name="Single Peak" schemeNote="Saul-Bass · One bold mountain"/>
+            </DCArtboard>
+            <DCArtboard id="ic-single-peak-river" label="C · Single Peak — river" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconSinglePeak scheme="river"/>} name="Single Peak" schemeNote="Saul-Bass · River-led"/>
+            </DCArtboard>
+            <DCArtboard id="ic-pines" label="D · Pines & Bend" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconPinesBend scheme="pine"/>} name="Pines & Bend" schemeNote="Catskills · Conifers + river curve"/>
+            </DCArtboard>
+            <DCArtboard id="ic-seal" label="E · Seal Monogram" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconSealMonogram scheme="pine"/>} name="Seal Monogram" schemeNote="Varsity · The most minimal"/>
+            </DCArtboard>
+            <DCArtboard id="ic-compass" label="F · Sun & Compass — kraft" width={340} height={520}>
+              <IconShelf Comp={() => <window.IconCompass scheme="kraft"/>} name="Sun & Compass" schemeNote="Folded-map · Kraft paper"/>
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="stamps" title="Stamps" subtitle="The visit token. Rotation gives each one a hand-pressed feel.">
+            <DCArtboard id="st-rect" label="A · Rectangle (current)" width={360} height={520}>
+              <StampShelf Comp={window.StampRectangle} name="Rectangle" note="The customs-stamp baseline — double rule, italic display town. Reads at 44px in a grid; works at 200px as a hero. Closest to a real passport stamp."/>
+            </DCArtboard>
+            <DCArtboard id="st-round" label="B · Round NP-passport" width={360} height={520}>
+              <StampShelf Comp={window.StampRoundPassport} name="Round NP-passport" note="What you actually find in National Park passport books — arc text + center glyph + date band. Less code-friendly, more iconic."/>
+            </DCArtboard>
+            <DCArtboard id="st-sunset" label="C · Sunset Poster" width={360} height={520}>
+              <StampShelf Comp={window.StampSunsetPoster} name="Sunset Poster" note="The 59 NP book idea. A four-color landscape lives inside the stamp border. Sophisticated, fun. Tradeoff: doesn't shrink as gracefully — best at 60px+." props={{ size: 240 }}/>
+            </DCArtboard>
+            <DCArtboard id="st-oval" label="D · Oval Cancellation" width={360} height={520}>
+              <StampShelf Comp={window.StampOvalCancel} name="Oval Cancellation" note="Postal-cancellation feel — arc text + ruled bars. Compact, can sit beside text in a single line of UI."/>
+            </DCArtboard>
+            <DCArtboard id="st-hex" label="E · Hexagonal Blaze" width={360} height={520}>
+              <StampShelf Comp={window.StampHexBlaze} name="Hexagonal Blaze" note="Trail-marker / fire-lookout patch. The big code letters scan instantly across the wallet pass and stamp grid. Most modern of the five."/>
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="passes" title="Wallet passes" subtitle="The pocket centerpiece. Same architecture (top bar · perk · count · footer) — different visual language.">
+            <DCArtboard id="pa-pine" label="0 · Pine baseline (current)" width={400} height={620}>
+              <PassStage Comp={() => <WalletPass businessName="The Heron" region="Narrowsburg, NY" count={3} total={5} perkLabel="The Regular's Pour" perkSub="Two more visits, on the house" serial="UDP·NRWB·a7q9" expires="11·2026"/>} name="Pine baseline" note="The current direction. Brand-led, calm, river-line watermark. Stays here if you want the most restrained option."/>
+            </DCArtboard>
+            <DCArtboard id="pa-river" label="A · River-led" width={400} height={620}>
+              <PassStage Comp={() => <window.PassRiverLed/>} name="River-led (A/B vs pine)" note="Same architecture, river-700 primary. Ochre sun replaces the river-curve watermark — feels more water-forward, less forest-ranger. Pine slides into stamp/badge accents."/>
+            </DCArtboard>
+            <DCArtboard id="pa-sunrise" label="B · Sunrise Poster" width={400} height={620}>
+              <PassStage Comp={() => <window.PassSunrisePoster/>} name="Sunrise Poster" note="Full NP-poster landscape behind the type. Translucent pine wash keeps the brand name legible; perk + count sit in a frosted band at the bottom. Sophisticated + most fun." dark/>
+            </DCArtboard>
+            <DCArtboard id="pa-kraft" label="C · Kraft Passport" width={400} height={620}>
+              <PassStage Comp={() => <window.PassKraftPassport/>} name="Kraft Passport" note="Most literal. Kraft cardstock, paper grain, a real stamp pressed into the corner. Italic display serif for the perk. Reads like a page from your customs book."/>
+            </DCArtboard>
+            <DCArtboard id="pa-kraft-dark" label="C · Kraft Passport — oxblood night" width={400} height={620}>
+              <PassStage Comp={() => <window.PassKraftPassportDark/>} name="Kraft Passport — oxblood night" note="The outside of the passport book — deep oxblood leather, gold-foil accents, a cream stamp debossed into the corner." dark/>
+            </DCArtboard>
+            <DCArtboard id="pa-kraft-pine-night" label="C · Kraft Passport — pine night ★" width={400} height={620}>
+              <PassStage Comp={() => <window.PassKraftPassportPineNight/>} name="Kraft Passport — pine night ★" note="Your pick — same architecture in deep pine leather. Round debossed stamp in the corner with the business code in italic. Reads as the canonical brand pass for the patron." dark/>
+            </DCArtboard>
+            <DCArtboard id="pa-block" label="D · Color-block" width={400} height={620}>
+              <PassStage Comp={() => <window.PassColorBlock/>} name="Color-block (Saul Bass)" note="Most graphic. Diagonal ochre wedge with a mountain motif, huge display numeral for the stamp count. Sophisticated travel-poster energy."/>
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+  </script>
+</body>
+</html>

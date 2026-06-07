@@ -1,0 +1,113 @@
+/* ---------------------------------------------------------------
+   Good Local — typography tokens
+   ---------------------------------------------------------------
+   Two voices: editorial Newsreader for warmth/heritage, civic
+   Public Sans for everything functional. DM Mono for codes.
+
+   Sizing is mobile-first. Body floor is 16px (sunlight + older
+   year-round patrons); UI labels never go below 14px. Wallet-
+   pass text is its own scale (Apple's PassKit dictates).
+   --------------------------------------------------------------- */
+
+:root {
+  /* -- Families ----------------------------------------------- */
+  --font-serif:    "Newsreader", "Iowan Old Style", "Georgia", serif;
+  --font-sans:     "Public Sans", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono:     "DM Mono", "SF Mono", "Menlo", ui-monospace, monospace;
+
+  /* -- Semantic family aliases -------------------------------- */
+  --font-display:  var(--font-serif);   /* hero, marketing      */
+  --font-body:     var(--font-sans);    /* UI default           */
+  --font-numeric:  var(--font-mono);    /* stamp counts, codes  */
+
+  /* -- Weight scale ------------------------------------------- */
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold: 600;
+  --weight-bold:    700;
+  /* Newsreader display weight: heavier optical settings */
+  --weight-display: 600;
+
+  /* -- Size scale (rem-based, 1rem = 16px) -------------------- */
+  --text-2xs:  0.6875rem; /* 11px — fine-print only             */
+  --text-xs:   0.8125rem; /* 13px — eyebrow caps, badge text    */
+  --text-sm:   0.875rem;  /* 14px — UI label minimum            */
+  --text-base: 1rem;      /* 16px — body floor                  */
+  --text-md:   1.125rem;  /* 18px — comfortable body            */
+  --text-lg:   1.3125rem; /* 21px — sub-section                 */
+  --text-xl:   1.5rem;    /* 24px — h3                          */
+  --text-2xl:  1.875rem;  /* 30px — h2                          */
+  --text-3xl:  2.375rem;  /* 38px — h1                          */
+  --text-4xl:  3rem;      /* 48px — display                     */
+  --text-5xl:  3.75rem;   /* 60px — hero                        */
+  --text-6xl:  4.75rem;   /* 76px — splash                      */
+
+  /* -- Line heights ------------------------------------------- */
+  --leading-tight:  1.1;   /* big display                       */
+  --leading-snug:   1.25;  /* headings                          */
+  --leading-normal: 1.45;  /* UI                                */
+  --leading-body:   1.55;  /* prose                             */
+  --leading-loose:  1.75;  /* long-form documents               */
+
+  /* -- Tracking ----------------------------------------------- */
+  --tracking-tight:  -0.018em; /* display serif                 */
+  --tracking-snug:   -0.008em; /* large sans headings           */
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;   /* eyebrows / overlines          */
+  --tracking-caps:   0.10em;   /* uppercase labels              */
+
+  /* -- Optical sizing (Newsreader supports it) ---------------- */
+  --opsz-text:    16; /* @kind other */
+  --opsz-display: 48; /* @kind other */
+}
+
+/* ---------------------------------------------------------------
+   Headings — every consumer surface inherits these. Direct edit
+   safe: weight + family changes happen via tokens, not selectors.
+   --------------------------------------------------------------- */
+
+html {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  color: var(--text-primary);
+  background: var(--surface-page);
+  font-feature-settings: "ss01", "cv11";
+}
+
+.gl-display {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  font-variation-settings: "opsz" var(--opsz-display);
+}
+
+.gl-eyebrow {
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--text-secondary);
+}
+
+.gl-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum", "zero";
+}
+
+.gl-numeric {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum", "zero";
+  font-variant-numeric: tabular-nums;
+}

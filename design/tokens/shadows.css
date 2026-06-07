@@ -1,0 +1,54 @@
+/* ---------------------------------------------------------------
+   Good Local — shadows, borders, motion
+   ---------------------------------------------------------------
+   No bluish bloom. All elevation tints toward warm ink so it
+   sits on cream paper without looking digital. Motion is short,
+   no bounces — this is a register-side product. People are in
+   a hurry; animation should feel competent, not playful.
+   --------------------------------------------------------------- */
+
+:root {
+  /* -- Shadows (warm-tinted, paper-like) ---------------------- */
+  --shadow-hairline:
+    0 0 0 1px rgb(26 22 18 / 0.08);
+
+  --shadow-paper:
+    0 1px 1px rgb(26 22 18 / 0.05),
+    0 1px 3px rgb(26 22 18 / 0.06);
+
+  --shadow-card:
+    0 1px 2px rgb(26 22 18 / 0.06),
+    0 4px 12px rgb(26 22 18 / 0.08);
+
+  --shadow-lift:
+    0 2px 4px rgb(26 22 18 / 0.06),
+    0 12px 32px rgb(26 22 18 / 0.10);
+
+  /* Wallet-pass shadow — used inside the app preview only.
+     iOS supplies its own on real lock screen. */
+  --shadow-pass:
+    0 2px 4px rgb(14 36 25 / 0.18),
+    0 16px 32px rgb(14 36 25 / 0.22);
+
+  /* Stamp impression — soft inner-ish look. */
+  --shadow-stamp:
+    inset 0 0 0 2px rgb(142 42 28 / 0.18),
+    0 1px 0 rgb(142 42 28 / 0.08);
+
+  /* -- Borders ------------------------------------------------ */
+  --border-1: 1px solid var(--border-hairline);
+  --border-2: 1.5px solid var(--border-rule);
+  --border-strong-1: 1px solid var(--ink-1000);
+  --border-dashed-1: 1px dashed var(--border-rule);
+
+  /* -- Motion ------------------------------------------------- */
+  --ease-out:    cubic-bezier(0.2, 0.7, 0.2, 1);     /* @kind other */
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);       /* @kind other */
+  --ease-stamp:  cubic-bezier(0.34, 1.32, 0.64, 1);  /* @kind other */
+
+  --duration-instant: 80ms;  /* @kind other */
+  --duration-quick:   140ms; /* @kind other */
+  --duration-base:    220ms; /* @kind other */
+  --duration-slow:    400ms; /* @kind other */
+  --duration-stamp:   520ms; /* @kind other */
+}

@@ -1,0 +1,18 @@
+<!-- @dsCard group="Spacing" viewport="700x180" name="Elevation" subtitle="Warm-tinted shadows. No bluish digital bloom." -->
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;padding:30px 28px;background:var(--paper-100);font-family:var(--font-body);color:var(--ink-1000);display:flex;gap:24px;align-items:center}
+  .item{display:flex;flex-direction:column;gap:10px;align-items:center}
+  .tile{width:108px;height:78px;background:var(--white);border-radius:10px;display:grid;place-items:center;color:var(--ink-700);font-size:12px}
+  .lbl{font-family:var(--font-mono);font-size:10px;color:var(--ink-500);letter-spacing:0.04em;text-align:center;line-height:1.3}
+  .lbl b{color:var(--ink-1000)}
+</style></head>
+<body>
+  <div class="item"><div class="tile" style="box-shadow:var(--shadow-hairline)">flat</div><span class="lbl"><b>hairline</b></span></div>
+  <div class="item"><div class="tile" style="box-shadow:var(--shadow-paper)">paper</div><span class="lbl"><b>paper</b></span></div>
+  <div class="item"><div class="tile" style="box-shadow:var(--shadow-card)">card</div><span class="lbl"><b>card ★</b></span></div>
+  <div class="item"><div class="tile" style="box-shadow:var(--shadow-lift)">lift</div><span class="lbl"><b>lift</b></span></div>
+  <div class="item"><div class="tile" style="background:var(--pine-700);color:var(--paper-100);box-shadow:var(--shadow-pass)">pass</div><span class="lbl"><b>pass</b></span></div>
+  <div class="item"><div class="tile" style="background:var(--stamp-50);color:var(--stamp-700);box-shadow:var(--shadow-stamp);border-radius:3px">stamp</div><span class="lbl"><b>stamp inset</b></span></div>
+</body></html>

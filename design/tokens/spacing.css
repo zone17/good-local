@@ -1,0 +1,63 @@
+/* ---------------------------------------------------------------
+   Good Local — spacing, radii, sizing
+   ---------------------------------------------------------------
+   4px base grid. Mobile tap targets are 44px floor (iOS HIG,
+   WCAG 2.5.5). Wallet-pass surfaces use Apple's PassKit
+   geometry; we mirror it for the in-app preview.
+   --------------------------------------------------------------- */
+
+:root {
+  /* -- Spacing scale (4px base) ------------------------------- */
+  --space-0:   0;
+  --space-px:  1px;
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-7:   28px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-14:  56px;
+  --space-16:  64px;
+  --space-20:  80px;
+  --space-24:  96px;
+  --space-32:  128px;
+
+  /* -- Radii (heritage feel = less round) --------------------- */
+  --radius-xs:  4px;   /* inputs, small chips                   */
+  --radius-sm:  6px;
+  --radius-md:  10px;  /* default card                          */
+  --radius-lg:  14px;  /* wallet-pass mirror                    */
+  --radius-xl:  20px;
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
+
+  /* Stamp shape — rectangular like a real passport stamp. */
+  --radius-stamp: 3px;
+
+  /* -- Tap target floors -------------------------------------- */
+  --tap-min:    44px;  /* iOS HIG / WCAG 2.5.5                  */
+  --tap-comfy:  52px;  /* outdoor / wet-hands buttons           */
+  --tap-large:  64px;  /* primary "Add to wallet" CTA           */
+
+  /* -- Layout containers -------------------------------------- */
+  --container-narrow: 560px;
+  --container-prose:  720px;
+  --container-wide:   1200px;
+  --container-dash:   1320px; /* business dashboard cap         */
+
+  /* -- Wallet pass geometry (Apple PassKit, 1× scale) --------- */
+  --pass-w: 340px;
+  --pass-h: 420px;
+  --pass-radius: 14px;
+
+  /* -- Z-layers ----------------------------------------------- */
+  --z-base:     0;    /* @kind other */
+  --z-rise:     10;   /* @kind other */
+  --z-overlay:  100;  /* @kind other */
+  --z-modal:    1000; /* @kind other */
+  --z-toast:    1100; /* @kind other */
+}

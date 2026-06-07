@@ -1,0 +1,443 @@
+/* ---------------------------------------------------------------
+   Good Local — base component styles
+   ---------------------------------------------------------------
+   Components are styled here via CSS classes prefixed `gl-*`.
+   The React wrappers in /components produce these classes; you
+   can also hand-write HTML using them.
+
+   Imported from styles.css. Additive only — never override tokens.
+   --------------------------------------------------------------- */
+
+/* ============== Button ============= */
+
+.gl-btn {
+  --_pad-y: 12px;
+  --_pad-x: 22px;
+  --_font-size: var(--text-base);
+  --_radius: var(--radius-md);
+  --_bg: var(--pine-700);
+  --_fg: var(--paper-100);
+  --_border: var(--pine-700);
+  --_bg-hover: var(--pine-800);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap-comfy);
+  padding: var(--_pad-y) var(--_pad-x);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--_font-size);
+  letter-spacing: -0.005em;
+  line-height: 1;
+  border-radius: var(--_radius);
+  background: var(--_bg);
+  color: var(--_fg);
+  border: 1.5px solid var(--_border);
+  cursor: pointer;
+  transition: background var(--duration-quick) var(--ease-out),
+              transform var(--duration-instant) var(--ease-out),
+              box-shadow var(--duration-quick) var(--ease-out);
+  text-decoration: none;
+  user-select: none;
+  white-space: nowrap;
+}
+.gl-btn:hover  { background: var(--_bg-hover); border-color: var(--_bg-hover); }
+.gl-btn:active { transform: translateY(1px); }
+.gl-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.gl-btn:disabled,
+.gl-btn[aria-disabled="true"] { opacity: 0.42; cursor: not-allowed; }
+
+/* Variants override the base .gl-btn values directly (not via private vars)
+   so the compiler doesn't mistake them for theme tokens. */
+.gl-btn--secondary,
+.gl-btn--secondary:active,
+.gl-btn--secondary:disabled {
+  background: var(--paper-100);
+  color: var(--ink-1000);
+  border-color: var(--ink-1000);
+}
+.gl-btn--secondary:hover { background: var(--paper-200); border-color: var(--ink-1000); }
+
+.gl-btn--ghost {
+  background: transparent;
+  color: var(--ink-1000);
+  border-color: transparent;
+}
+.gl-btn--ghost:hover { background: var(--ink-100); border-color: transparent; }
+
+.gl-btn--danger {
+  background: var(--stamp-700);
+  color: var(--paper-100);
+  border-color: var(--stamp-700);
+}
+.gl-btn--danger:hover { background: var(--stamp-900); border-color: var(--stamp-900); }
+
+/* The big "Add to Apple Wallet" CTA */
+.gl-btn--wallet {
+  background: var(--ink-1000);
+  color: var(--paper-100);
+  border-color: var(--ink-1000);
+  border-radius: var(--radius-lg);
+  padding-left: 28px;
+  padding-right: 28px;
+  font-size: var(--text-md);
+  min-height: var(--tap-large);
+}
+.gl-btn--wallet:hover { background: var(--ink-900); border-color: var(--ink-900); }
+
+.gl-btn--sm {
+  padding: 8px 14px;
+  font-size: var(--text-sm);
+  min-height: 36px;
+}
+.gl-btn--lg {
+  padding: 16px 26px;
+  font-size: var(--text-md);
+}
+.gl-btn--block { width: 100%; }
+
+/* ============== IconButton ============= */
+
+.gl-iconbtn {
+  display: inline-grid;
+  place-items: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-1000);
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: background var(--duration-quick) var(--ease-out);
+}
+.gl-iconbtn:hover { background: var(--ink-100); }
+.gl-iconbtn:active { background: var(--ink-200); }
+.gl-iconbtn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.gl-iconbtn--bordered { border-color: var(--ink-200); }
+.gl-iconbtn--lg { width: var(--tap-comfy); height: var(--tap-comfy); }
+
+/* ============== Card ============= */
+
+.gl-card {
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+  border: 1px solid transparent;
+}
+.gl-card--flat { box-shadow: var(--shadow-hairline); }
+.gl-card--kraft { background: var(--surface-card-kraft); box-shadow: var(--shadow-paper); }
+.gl-card--bordered { box-shadow: none; border-color: var(--border-hairline); }
+.gl-card--pine {
+  background: var(--surface-pass);
+  color: var(--text-on-pine);
+  box-shadow: var(--shadow-pass);
+}
+
+/* ============== Badge ============= */
+
+.gl-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.2;
+  border-radius: var(--radius-pill);
+  background: var(--ink-100);
+  color: var(--ink-1000);
+  letter-spacing: 0.01em;
+}
+.gl-badge--pine  { background: var(--pine-100); color: var(--pine-900); }
+.gl-badge--stamp { background: var(--stamp-100); color: var(--stamp-900); }
+.gl-badge--ochre { background: var(--ochre-100); color: var(--ochre-900); }
+.gl-badge--river { background: var(--river-100); color: var(--river-900); }
+.gl-badge--solid-pine { background: var(--pine-700); color: var(--paper-100); }
+.gl-badge--solid-stamp { background: var(--stamp-700); color: var(--paper-100); }
+.gl-badge--solid-ink { background: var(--ink-1000); color: var(--paper-100); }
+
+.gl-badge--eyebrow {
+  background: transparent;
+  padding: 0;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-500);
+}
+
+/* ============== Input ============= */
+
+.gl-input,
+.gl-textarea,
+.gl-select {
+  display: block;
+  width: 100%;
+  min-height: var(--tap-comfy);
+  padding: 12px 14px;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.4;
+  color: var(--ink-1000);
+  background: var(--white);
+  border: 1.5px solid var(--ink-300);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--duration-quick) var(--ease-out),
+              box-shadow var(--duration-quick) var(--ease-out);
+  outline: none;
+}
+.gl-input::placeholder,
+.gl-textarea::placeholder { color: var(--ink-400); }
+.gl-input:hover,
+.gl-textarea:hover,
+.gl-select:hover { border-color: var(--ink-500); }
+.gl-input:focus,
+.gl-textarea:focus,
+.gl-select:focus { border-color: var(--pine-700); box-shadow: 0 0 0 3px var(--pine-100); }
+.gl-input[aria-invalid="true"] { border-color: var(--stamp-700); box-shadow: 0 0 0 3px var(--stamp-100); }
+.gl-textarea { min-height: 96px; padding: 12px 14px; resize: vertical; }
+
+.gl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gl-field__label {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-1000);
+}
+.gl-field__hint {
+  font-size: var(--text-xs);
+  color: var(--ink-500);
+  line-height: 1.4;
+}
+.gl-field__hint--error { color: var(--stamp-700); }
+
+/* ============== Switch ============= */
+
+.gl-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+}
+.gl-switch input { opacity: 0; width: 0; height: 0; }
+.gl-switch__track {
+  position: absolute;
+  inset: 0;
+  background: var(--ink-300);
+  border-radius: 999px;
+  transition: background var(--duration-quick) var(--ease-out);
+  cursor: pointer;
+}
+.gl-switch__track::after {
+  content: "";
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  background: var(--white);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgb(26 22 18 / 0.18);
+  transition: transform var(--duration-quick) var(--ease-out);
+}
+.gl-switch input:checked + .gl-switch__track { background: var(--pine-700); }
+.gl-switch input:checked + .gl-switch__track::after { transform: translateX(18px); }
+
+/* ============== Tag (rectangular, sharp — heritage) ============= */
+
+.gl-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: var(--radius-xs);
+  background: var(--ink-100);
+  color: var(--ink-700);
+  border: 1px solid var(--ink-200);
+}
+.gl-tag--pine  { background: var(--pine-50); color: var(--pine-900); border-color: var(--pine-200); }
+.gl-tag--stamp { background: var(--stamp-50); color: var(--stamp-900); border-color: var(--stamp-300); }
+.gl-tag--ochre { background: var(--ochre-50); color: var(--ochre-900); border-color: var(--ochre-300); }
+
+/* ============== Divider ============= */
+
+.gl-divider {
+  height: 0;
+  border: 0;
+  border-top: 1px solid var(--ink-200);
+  margin: var(--space-5) 0;
+}
+.gl-divider--dashed { border-top-style: dashed; }
+.gl-divider--strong { border-top-color: var(--ink-1000); border-top-width: 1.5px; }
+
+/* ============== Stamp (the visit token) =============
+   Round, hand-pressed passport stamp by default. The component
+   draws its rings + text in SVG; the outer span carries the
+   rotation, halo, and state classes. */
+
+.gl-stamp {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 60px; height: 60px;
+  border-radius: var(--radius-stamp);
+  user-select: none;
+  transition: transform var(--duration-base) var(--ease-stamp);
+}
+.gl-stamp__inner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.gl-stamp--earned {
+  color: var(--stamp-700);
+}
+.gl-stamp--earned svg { overflow: visible; }
+.gl-stamp--empty .gl-stamp__inner {
+  border: 1.5px dashed var(--ink-300);
+  border-radius: inherit;
+  color: var(--ink-400);
+}
+.gl-stamp--locked .gl-stamp__inner {
+  border: 1.5px solid var(--ink-200);
+  background: var(--ink-100);
+  color: var(--ink-400);
+  border-radius: inherit;
+}
+
+/* Round shape — circular halo, no inner border (rings drawn in SVG). */
+.gl-stamp--round { border-radius: 50%; }
+.gl-stamp--round.gl-stamp--empty .gl-stamp__inner,
+.gl-stamp--round.gl-stamp--locked .gl-stamp__inner { border-radius: 50%; }
+
+.gl-stamp--earned.gl-stamp--just::before {
+  /* Just-stamped halo */
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--stamp-300);
+  opacity: 0;
+  animation: gl-stamp-halo var(--duration-stamp) var(--ease-stamp) forwards;
+  pointer-events: none;
+}
+@keyframes gl-stamp-halo {
+  0%   { opacity: 0.85; transform: scale(0.6); }
+  60%  { opacity: 0.5;  transform: scale(1.05); }
+  100% { opacity: 0;    transform: scale(1.15); }
+}
+
+/* ============== Tabs ============= */
+
+.gl-tabs {
+  display: inline-flex;
+  background: var(--ink-100);
+  border-radius: var(--radius-pill);
+  padding: 4px;
+  gap: 2px;
+}
+.gl-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  min-height: 36px;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-700);
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--duration-quick) var(--ease-out),
+              color var(--duration-quick) var(--ease-out);
+}
+.gl-tabs__tab[aria-selected="true"],
+.gl-tabs__tab--active {
+  background: var(--white);
+  color: var(--ink-1000);
+  box-shadow: var(--shadow-paper);
+}
+
+/* ============== Stat ============= */
+
+.gl-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gl-stat__label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-500);
+}
+.gl-stat__value {
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: var(--tracking-tight);
+  color: var(--ink-1000);
+  font-variation-settings: "opsz" 48;
+}
+.gl-stat__delta {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--ink-500);
+}
+.gl-stat__delta--up { color: var(--pine-700); }
+.gl-stat__delta--down { color: var(--stamp-700); }
+
+/* ============== List row (mobile-first patron list) =============*/
+
+.gl-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--white);
+  border-bottom: 1px solid var(--ink-100);
+  min-height: 72px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+.gl-row:hover { background: var(--paper-100); }
+.gl-row__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.gl-row__title { font-weight: 600; font-size: var(--text-md); color: var(--ink-1000); }
+.gl-row__sub { font-size: var(--text-sm); color: var(--ink-500); }
+.gl-row__chev { color: var(--ink-300); flex-shrink: 0; }
+
+/* ============== Toast / Notice ============= */
+
+.gl-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--pine-50);
+  color: var(--pine-1000);
+  border: 1px solid var(--pine-200);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+.gl-notice--ochre { background: var(--ochre-50); color: var(--ochre-900); border-color: var(--ochre-300); }
+.gl-notice--stamp { background: var(--stamp-50); color: var(--stamp-900); border-color: var(--stamp-300); }
+.gl-notice--river { background: var(--river-50); color: var(--river-900); border-color: var(--river-300); }

@@ -1,0 +1,13 @@
+/* ---------------------------------------------------------------
+   Good Local — design system entry
+   ---------------------------------------------------------------
+   This file is intentionally @import-only. Consumers link this
+   one file; every token, font, and global style ships through it.
+   --------------------------------------------------------------- */
+
+@import url("./tokens/fonts.css");
+@import url("./tokens/colors.css");
+@import url("./tokens/typography.css");
+@import url("./tokens/spacing.css");
+@import url("./tokens/shadows.css");
+@import url("./tokens/components.css");

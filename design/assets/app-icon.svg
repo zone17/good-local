@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  
+  <rect width="1024" height="1024" rx="232" fill="#234D3A"></rect>
+  <g transform="translate(512 512) rotate(-5)">
+    
+    <circle r="370" stroke="#C57939" stroke-width="22" fill="none"></circle>
+    
+    <circle r="320" stroke="#C57939" stroke-width="6" fill="none" opacity="0.72"></circle>
+    
+    <defs>
+      <path id="ai-arc-top" d="M -310 0 A 310 310 0 0 1 310 0" fill="none"></path>
+      <path id="ai-arc-bot" d="M -310 0 A 310 310 0 0 0 310 0" fill="none"></path>
+    </defs>
+    <text fill="#C57939" font-family="Public Sans, sans-serif" font-size="64" font-weight="700" letter-spacing="20">
+      <textPath href="#ai-arc-top" startOffset="50%" text-anchor="middle">GOOD · LOCAL</textPath>
+    </text>
+    <text fill="#C57939" font-family="DM Mono, monospace" font-size="50" font-weight="500" letter-spacing="9">
+      <textPath href="#ai-arc-bot" startOffset="50%" text-anchor="middle">EST · 2026</textPath>
+    </text>
+    
+    <text y="80" text-anchor="middle" fill="#C57939" font-family="Newsreader, serif" font-style="italic" font-size="320" font-weight="600" letter-spacing="-6">G</text>
+  </g>
+</svg>

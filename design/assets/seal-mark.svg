@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <circle cx="60" cy="60" r="56" fill="none" stroke="currentColor" stroke-width="3"></circle>
+  <circle cx="60" cy="60" r="48" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+  <defs>
+    <path id="seal-top-lg" d="M 18 60 A 42 42 0 0 1 102 60" fill="none"></path>
+    <path id="seal-bot-lg" d="M 20 60 A 40 40 0 0 0 100 60" fill="none"></path>
+  </defs>
+  <text font-family="Public Sans, sans-serif" font-size="9" font-weight="700" letter-spacing="2.4" fill="currentColor">
+    <textPath href="#seal-top-lg" startOffset="50%" text-anchor="middle">UPPER · DELAWARE</textPath>
+  </text>
+  <text font-family="Public Sans, sans-serif" font-size="9" font-weight="600" letter-spacing="2" fill="currentColor">
+    <textPath href="#seal-bot-lg" startOffset="50%" text-anchor="middle">GOOD · LOCAL · EST · 2026</textPath>
+  </text>
+  <g transform="translate(60 62)">
+    <path d="M -22 8 L -11 -10 L -3 0 L 5 -14 L 16 6 L 22 8 Z" fill="currentColor"></path>
+    <path d="M -24 14 Q -13 10 -3 14 T 24 14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"></path>
+    <path d="M -24 19 Q -13 16 -3 19 T 24 19" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.55"></path>
+  </g>
+  <circle cx="60" cy="10" r="1.4" fill="currentColor"></circle>
+  <circle cx="60" cy="110" r="1.4" fill="currentColor"></circle>
+  <circle cx="10" cy="60" r="1.4" fill="currentColor"></circle>
+  <circle cx="110" cy="60" r="1.4" fill="currentColor"></circle>
+</svg>

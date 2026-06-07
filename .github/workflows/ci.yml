@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # 1) Frontend: build the SPA + check-in entry, then enforce the SC-008 bundle
+  #    budgets (check-in entry <= 60 KB gzipped, main entry <= 130 KB).
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install app deps
+        run: cd app && npm ci
+      - name: Build app
+        run: cd app && npm run build
+      - name: Enforce bundle budgets
+        run: node .github/scripts/check-size.mjs
+
+  # 2) Tests: spin up the local Supabase stack, apply migrations + seed via
+  #    `db reset`, export the stack keys, then run the vitest suites
+  #    (contract + integration RLS proofs + unit).
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install workspace deps
+        run: npm ci
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start Supabase local stack
+        run: supabase start
+      - name: Export stack keys
+        # `-o env` wraps values in double quotes; GITHUB_ENV takes lines
+        # verbatim, so strip them or supabase-js sees an invalid URL.
+        run: supabase status -o env | tr -d '"' >> "$GITHUB_ENV"
+      - name: Apply migrations + seed
+        run: supabase db reset --debug
+      - name: Run vitest
+        run: npx vitest run
+
+  # 3) Brand: enforce the SC-009 brand rules (no emoji, no rating affordances,
+  #    plain voice, plural-helper usage) over app/src + design/components.
+  brand:
+    name: brand
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check brand compliance
+        run: node scripts/check-brand.mjs
+
+  # 4) Typecheck: tsc --noEmit over tests + configs (the "lint" gate T003
+  #    promised — vitest transpiles without typechecking, so this is the only
+  #    thing that catches type errors in the suite).
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install workspace deps
+        run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+  # 5) E2E (T003/T034/T048/T060): the launch-critical Playwright paths —
+  #    check-in (SC-002), steer attribution (SC-006), and a11y AA + tap
+  #    targets (Art. IX) — against the local Supabase stack. Chromium project
+  #    only (the slow3g project applies CDP throttling per-test and is a
+  #    superset in runtime, not coverage).
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install workspace deps
+        run: npm ci
+      - name: Install app deps
+        run: cd app && npm ci
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start Supabase local stack
+        run: supabase start
+      - name: Apply migrations + seed
+        run: supabase db reset --debug
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run Playwright (chromium)
+        run: npx playwright test --project=chromium
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: test-results/
+          retention-days: 7
