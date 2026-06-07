@@ -188,6 +188,7 @@ describe("get_business_detail (contract §2.6)", () => {
     const { data, error } = await client.rpc("get_business_detail", { p_business_slug: SEED.businessSlug });
     expect(error).toBeNull();
     expect(data.business_slug).toBe(SEED.businessSlug);
+    expect(data.stamp_code).toBe("HRN"); // registered code for stamp rendering (§2.6, 2026-06-07)
     expect(data.name).toBe("The Heron");
     expect(data.town).toBe("Narrowsburg");
     expect(typeof data.category).toBe("string");

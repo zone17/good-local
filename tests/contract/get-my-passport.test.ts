@@ -210,6 +210,7 @@ describe("get_my_passport (contract §2.4)", () => {
 
     // Heron group
     expect(heron.name).toBe("The Heron");
+    expect(heron.stamp_code).toBe("HRN"); // registered code, never derived initials (§2.4, 2026-06-07)
     expect(heron.town).toBe("Narrowsburg");
     expect(heron.stamp_count).toBe(3);
     expect(Array.isArray(heron.stamp_dates)).toBe(true);

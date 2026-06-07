@@ -31,14 +31,17 @@ function rotateFor(i) {
 function fromPassport(p) {
   const businesses = (p.businesses ?? []).map((b) => {
     const perk = (b.perks ?? [])[0] ?? null;
+    // Registered stamp code (3–4 letters) for stamp faces; honest slug fallback.
+    const code = b.stamp_code || b.business_slug;
     return {
       slug: b.business_slug,
+      stampCode: code,
       name: b.name,
       town: b.town,
       stampCount: b.stamp_count,
       stampDates: b.stamp_dates ?? [],
       stamps: (b.stamp_dates ?? []).map((d, i) => ({
-        label: b.business_slug, date: stampLabel(d), rotate: rotateFor(i),
+        label: code, date: stampLabel(d), rotate: rotateFor(i),
       })),
       perk: perk
         ? {

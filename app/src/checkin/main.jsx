@@ -21,9 +21,11 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "@ds/styles.css";
-import { Stamp } from "@ds/components/passport/Stamp.jsx";
+import { Stamp, StampGrid } from "@ds/components/passport/Stamp.jsx";
 import { ProgressMeter } from "@ds/components/passport/ProgressMeter.jsx";
+import { WalletPass } from "@ds/components/passport/WalletPass.jsx";
 import { Button } from "@ds/components/core/Button.jsx";
+import { Card } from "@ds/components/core/Card.jsx";
 import { recordCheckIn, addToPassport, claimPassport } from "./checkin-api.js";
 
 // Map a §7 error code → brand-voice copy (clients branch on code, never message).
@@ -122,6 +124,8 @@ function Shell({ children }) {
         background: "var(--paper-100)",
         color: "var(--ink-1000)",
         fontFamily: "var(--font-body, var(--font-sans))",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       {children}
@@ -159,12 +163,14 @@ function Stamping() {
 function Success({ result, onClaim }) {
   const [added, setAdded] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [showSheet, setShowSheet] = useState(false);
   const perk = result?.perk_progress;
   const region = result?.regional_progress;
   const stamp = result?.stamp;
   const name = prettyName(result?.slug);
   const remaining = perk ? Math.max(0, perk.threshold - perk.current) : null;
   const milestoneUnlocked = (region?.milestones_unlocked || []).length > 0;
+  const stampLabel = stamp?.stamp_code ?? codeLabel(name);
 
   const onAddWallet = async () => {
     setAdding(true);
@@ -175,32 +181,47 @@ function Success({ result, onClaim }) {
       setAdded(true); // the add intent is recorded best-effort; never block.
     } finally {
       setAdding(false);
+      setShowSheet(false);
     }
   };
 
   return (
     <Shell>
-      <div style={{ textAlign: "center" }}>
+      {/* Halo burst behind the fresh stamp (design check-in flow) */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute", top: 110, left: "50%", transform: "translateX(-50%)",
+          width: 280, height: 280, borderRadius: "50%",
+          background: "radial-gradient(circle, color-mix(in srgb, var(--stamp-300) 60%, transparent), transparent 70%)",
+          animation: "gl-halo-burst 520ms cubic-bezier(.18,.9,.32,1.2) both",
+          pointerEvents: "none", zIndex: 0,
+        }}
+      />
+
+      <div style={{ textAlign: "center", position: "relative", zIndex: 1 }}>
         <div className="gl-eyebrow" style={{ color: "var(--stamp-700)" }}>
           {perk ? `Stamp #${perk.current}` : "Stamped"}
         </div>
         <div
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: 30,
+            fontSize: 28,
             fontWeight: 600,
-            lineHeight: 1.1,
-            margin: "6px 0 10px",
-            letterSpacing: "-0.012em",
+            lineHeight: 1.05,
+            margin: "8px 0 10px",
+            letterSpacing: "-0.014em",
+            textWrap: "balance",
+            fontVariationSettings: '"opsz" 32',
           }}
         >
           Stamped at {name}.
         </div>
         {perk ? (
-          <div style={{ color: "var(--ink-700)", fontSize: 15, lineHeight: 1.5 }}>
+          <div style={{ color: "var(--ink-700)", fontSize: 14, lineHeight: 1.5, textWrap: "pretty" }}>
             {perk.ready ? (
               <>
-                Your <strong>{perk.name}</strong> is ready.
+                Your <strong>{perk.name}</strong> is ready. Show this at the register.
               </>
             ) : (
               <>
@@ -211,31 +232,42 @@ function Success({ result, onClaim }) {
         ) : null}
       </div>
 
-      <div style={{ display: "grid", placeItems: "center", padding: "28px 0 14px" }}>
+      <div style={{ display: "grid", placeItems: "center", padding: "20px 0 8px", position: "relative", zIndex: 1 }}>
         <Stamp
           state="earned"
-          label={stamp?.stamp_code ?? codeLabel(name)}
+          label={stampLabel}
           date={fmtDate(stamp?.stamped_at)}
-          size={140}
+          size={132}
           just
           rotate={-4}
-          className="gl-stamp--halo"
         />
       </div>
 
       {perk ? (
-        <div style={{ padding: "0 4px 4px" }}>
-          <ProgressMeter
-            count={perk.current}
-            total={perk.threshold}
-            label={perk.name}
-            remainingLabel={remaining === 0 ? "earned" : `${remaining} to go`}
-          />
+        <div className="gl-rise" style={{ position: "relative", zIndex: 1 }}>
+          <Card style={{ padding: "14px 16px" }}>
+            <ProgressMeter
+              count={perk.current}
+              total={perk.threshold}
+              label={perk.name}
+              remainingLabel={remaining === 0 ? "earned" : `${remaining} to go`}
+            />
+            <div style={{ marginTop: 12 }}>
+              <StampGrid
+                size={40} gap={8} columns={perk.threshold} total={perk.threshold}
+                stamps={Array.from({ length: Math.min(perk.current, perk.threshold) }).map((_, i) => ({
+                  label: stampLabel,
+                  rotate: [-3, 2, -2, 3, -1, 4, -4, 1][i % 8],
+                  just: i === perk.current - 1,
+                }))}
+              />
+            </div>
+          </Card>
         </div>
       ) : null}
 
       {region ? (
-        <div style={{ textAlign: "center", color: "var(--ink-500)", fontSize: 13, marginTop: 14 }}>
+        <div style={{ textAlign: "center", color: "var(--ink-500)", fontSize: 13, marginTop: 14, position: "relative", zIndex: 1 }}>
           {milestoneUnlocked
             ? `New milestone — ${region.towns_visited} of ${region.towns_total} towns.`
             : `${region.towns_visited} of ${region.towns_total} towns this season.`}
@@ -244,7 +276,7 @@ function Success({ result, onClaim }) {
 
       <div style={{ flex: 1 }} />
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className="gl-rise" style={{ display: "flex", flexDirection: "column", gap: 10, position: "relative", zIndex: 1 }}>
         {added ? (
           <div
             role="status"
@@ -259,7 +291,7 @@ function Success({ result, onClaim }) {
             Saved to your passport.
           </div>
         ) : (
-          <Button variant="wallet" block disabled={adding} onClick={onAddWallet}>
+          <Button variant="wallet" block disabled={adding} onClick={() => setShowSheet(true)}>
             {adding ? "Saving…" : "Add Passport to Apple Wallet"}
           </Button>
         )}
@@ -272,7 +304,77 @@ function Success({ result, onClaim }) {
           </Button>
         ) : null}
       </div>
+
+      {showSheet ? (
+        <WalletAddSheet
+          name={name}
+          perk={perk}
+          stampLabel={stampLabel}
+          adding={adding}
+          onAdd={onAddWallet}
+          onClose={() => setShowSheet(false)}
+        />
+      ) : null}
     </Shell>
+  );
+}
+
+// Bottom sheet: preview the pass before adding (design check-in flow).
+function WalletAddSheet({ name, perk, stampLabel, adding, onAdd, onClose }) {
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0,
+        background: "rgba(14,36,25,0.55)",
+        backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)",
+        display: "flex", flexDirection: "column", justifyContent: "flex-end",
+        zIndex: 50,
+        animation: "gl-fade 180ms ease-out both",
+      }}
+    >
+      <div
+        role="dialog"
+        aria-label="Add your passport to your wallet"
+        style={{
+          background: "var(--paper-50)",
+          borderTopLeftRadius: 24, borderTopRightRadius: 24,
+          padding: "10px 18px 22px",
+          animation: "gl-sheet-up 240ms cubic-bezier(.2,.8,.2,1) both",
+        }}
+      >
+        <div style={{ width: 38, height: 4, background: "var(--ink-200)", borderRadius: 2, margin: "0 auto 14px" }} />
+        <div style={{ textAlign: "center", marginBottom: 12 }}>
+          <div className="gl-eyebrow">Preview</div>
+          <div
+            style={{
+              fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 600,
+              lineHeight: 1.15, marginTop: 4, letterSpacing: "-0.012em",
+              fontVariationSettings: '"opsz" 22',
+            }}
+          >
+            Your Upper Delaware Passport
+          </div>
+        </div>
+        <div style={{ display: "grid", placeItems: "center", marginBottom: 8 }}>
+          <WalletPass
+            businessName={name}
+            region="Upper Delaware"
+            count={perk ? perk.current : 1}
+            total={perk ? perk.threshold : 1}
+            perkLabel={perk ? perk.name : "Your pass"}
+            perkSub={perk && perk.ready ? "Ready — show this at the register" : ""}
+            stampCode={stampLabel}
+            style={{ "--pass-w": "304px", "--pass-h": "376px", boxSizing: "border-box" }}
+          />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+          <Button variant="wallet" block disabled={adding} onClick={onAdd}>
+            {adding ? "Saving…" : "Add to Apple Wallet"}
+          </Button>
+          <Button variant="ghost" block onClick={onClose}>Not now</Button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -716,6 +716,7 @@ begin
   from (
     select jsonb_build_object(
       'business_slug', b.slug,
+      'stamp_code', b.stamp_code,
       'name', b.name,
       'town', t.name,
       'stamp_count', cnt.c,

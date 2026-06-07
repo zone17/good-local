@@ -155,7 +155,7 @@ Response shape (view `my_passport`):
 {
   "patron": { "id": "uuid", "display_name": "River", "claimed": true },
   "businesses": [
-    { "business_slug": "the-laundry", "name": "The Laundry", "town": "Narrowsburg",
+    { "business_slug": "the-laundry", "stamp_code": "LDY", "name": "The Laundry", "town": "Narrowsburg",
       "stamp_count": 4, "stamp_dates": ["2026-06-01", "..."],
       "perks": [{ "perk_id": "uuid", "name": "Free coffee", "current": 4, "threshold": 6,
                   "ready": false }] }
@@ -205,7 +205,7 @@ Context: `anon-patron`, `patron`, `service`. Risk tier: **0**.
 
 Response:
 ```json
-{ "business_slug": "the-laundry", "name": "The Laundry", "town": "Narrowsburg",
+{ "business_slug": "the-laundry", "stamp_code": "LDY", "name": "The Laundry", "town": "Narrowsburg",
   "category": "cafe", "hours": "Wed–Sun 8–4", "owner_note": "…", "directions_url": "https://…",
   "regulars_this_season": 12, "regulars_empty": false,
   "my_progress": { "stamp_count": 4, "perks": [{ "perk_id": "uuid", "current": 4, "threshold": 6 }] } }

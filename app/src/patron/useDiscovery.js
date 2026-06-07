@@ -74,6 +74,8 @@ function fromDetail(d) {
   return {
     id: d.business_id,
     slug: d.business_slug,
+    // Registered stamp code (3–4 letters) for stamp faces; honest slug fallback.
+    stampCode: d.stamp_code || d.business_slug,
     name: d.name,
     town: d.town,
     category: d.category ?? "",

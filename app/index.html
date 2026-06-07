@@ -8,6 +8,21 @@
   <meta name="theme-color" content="#1d4231">
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="apple-touch-icon" href="/icon.svg">
+  <style>
+    /* Screen-entrance keyframes live in the document head — defined inside the
+       rendered React tree they don't exist at first paint and the screen sits
+       at opacity 0 (design-handoff lesson, 2026-06-07). */
+    /* transform-only — animating opacity on text-bearing blocks makes axe
+       measure mid-fade contrast (flaky AA failures) */
+    @keyframes gl-screen-in {
+      from { transform: translateX(8px); }
+      to   { transform: translateX(0); }
+    }
+    .gl-screen-in { animation: gl-screen-in 200ms ease-out both; }
+    @media (prefers-reduced-motion: reduce) {
+      .gl-screen-in { animation: none; }
+    }
+  </style>
 </head>
 <body>
   <div id="root"></div>

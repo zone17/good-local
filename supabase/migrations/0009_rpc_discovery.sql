@@ -131,7 +131,7 @@ declare
   v_my_progress jsonb;
   v_directions text;
 begin
-  select b.id, b.slug, b.name, b.category, b.hours, b.owner_note, b.status, t.name as town_name
+  select b.id, b.slug, b.name, b.category, b.hours, b.owner_note, b.status, b.stamp_code, t.name as town_name
     into v_biz
   from businesses b join towns t on t.id = b.town_id
   where b.slug = p_business_slug;
@@ -176,6 +176,7 @@ begin
   return jsonb_build_object(
     'business_id', v_biz.id,
     'business_slug', v_biz.slug,
+    'stamp_code', v_biz.stamp_code,
     'name', v_biz.name,
     'town', v_town,
     'category', v_biz.category,
