@@ -113,14 +113,14 @@ Per plan.md structure: `app/` (frontend, two Vite entries), `supabase/` (migrati
 
 ### Tests for User Story 3 (write first, must fail)
 
-- [ ] T036 [P] [US3] Contract test for `redeem_perk` (ready-only, reset rules, audit fields) in `tests/contract/redeem-perk.test.ts`
+- [x] T036 [P] [US3] Contract test for `redeem_perk` (ready-only, reset rules, audit fields) in `tests/contract/redeem-perk.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T037 [US3] Migration `supabase/migrations/0007_rpc_redeem.sql`: `redeem_perk` RPC + perk-ready surfacing in activity feed source view
-- [ ] T038 [US3] Redemption UI on business surface (activity feed action + single-confirm) wiring in `app/src/business/BusinessApp.jsx`
-- [ ] T039 [US3] Patron perk-ready states (passport + check-in confirmation variants) wiring in `app/src/patron/PatronApp.jsx`
-- [ ] T040 [US3] Integration test `tests/integration/perk-lifecycle.test.ts`: threshold edit carry-over (FR-011), deactivation preserves stamps (FR-010), atomic ready-at-threshold (Edge Case)
+- [x] T037 [US3] Migration `supabase/migrations/0007_rpc_redeem.sql`: `redeem_perk` RPC + perk-ready surfacing in activity feed source view
+- [x] T038 [US3] Redemption UI on business surface (activity feed action + single-confirm) wiring in `app/src/business/BusinessApp.jsx`
+- [x] T039 [US3] Patron perk-ready states (passport + check-in confirmation variants) wiring in `app/src/patron/PatronApp.jsx`
+- [x] T040 [US3] Integration test `tests/integration/perk-lifecycle.test.ts`: threshold edit carry-over (FR-011), deactivation preserves stamps (FR-010), atomic ready-at-threshold (Edge Case)
 
 **Checkpoint**: loyalty loop closed — earn → ready → redeem → recorded
 
@@ -134,13 +134,13 @@ Per plan.md structure: `app/` (frontend, two Vite entries), `supabase/` (migrati
 
 ### Tests for User Story 4 (write first, must fail)
 
-- [ ] T041 [P] [US4] Contract test for `get_my_passport` (grouped shape, regional progress, milestone unlocks) in `tests/contract/get-my-passport.test.ts`
+- [x] T041 [P] [US4] Contract test for `get_my_passport` (grouped shape, regional progress, milestone unlocks) in `tests/contract/get-my-passport.test.ts`
 
 ### Implementation for User Story 4
 
-- [ ] T042 [US4] Migration `supabase/migrations/0008_rpc_passport.sql`: `get_my_passport` RPC + town-first-visit milestone unlock logic (in `record_check_in` transaction or trigger — keep atomic)
-- [ ] T043 [US4] Wire PatronApp passport home to `api.ts` (stamps grouped, perk progress, region card) in `app/src/patron/PatronApp.jsx`
-- [ ] T044 [P] [US4] No-decay invariant test `tests/integration/no-decay.test.ts`: clock-advanced patron returns with identical stamps/milestones (Art. VII)
+- [x] T042 [US4] Migration `supabase/migrations/0008_rpc_passport.sql`: `get_my_passport` RPC + town-first-visit milestone unlock logic (in `record_check_in` transaction or trigger — keep atomic)
+- [x] T043 [US4] Wire PatronApp passport home to `api.ts` (stamps grouped, perk progress, region card) in `app/src/patron/PatronApp.jsx`
+- [x] T044 [P] [US4] No-decay invariant test `tests/integration/no-decay.test.ts`: clock-advanced patron returns with identical stamps/milestones (Art. VII)
 
 **Checkpoint**: the identity layer is live
 
@@ -154,13 +154,13 @@ Per plan.md structure: `app/` (frontend, two Vite entries), `supabase/` (migrati
 
 ### Tests for User Story 5 (write first, must fail)
 
-- [ ] T045 [P] [US5] Contract tests for `get_discovery` (no ordering params exist — Art. I), `get_business_detail`, `record_impressions` (batch + dedup) in `tests/contract/discovery.test.ts`
+- [x] T045 [P] [US5] Contract tests for `get_discovery` (no ordering params exist — Art. I), `get_business_detail`, `record_impressions` (batch + dedup) in `tests/contract/discovery.test.ts`
 
 ### Implementation for User Story 5
 
-- [ ] T046 [US5] Migration `supabase/migrations/0009_rpc_discovery.sql`: `get_discovery` (picks + counters from views only), `get_business_detail`, `record_impressions` with per-day server dedup (R8)
-- [ ] T047 [US5] Wire Discover + BusinessDetail + impression batching (one call per render) in `app/src/patron/PatronApp.jsx`; honest empty-state copy per design
-- [ ] T048 [US5] Steer-attribution e2e `tests/e2e/steer-attribution.spec.ts` (SC-006): scripted surface→visit set asserts ≥95% attribution
+- [x] T046 [US5] Migration `supabase/migrations/0009_rpc_discovery.sql`: `get_discovery` (picks + counters from views only), `get_business_detail`, `record_impressions` with per-day server dedup (R8)
+- [x] T047 [US5] Wire Discover + BusinessDetail + impression batching (one call per render) in `app/src/patron/PatronApp.jsx`; honest empty-state copy per design
+- [x] T048 [US5] Steer-attribution e2e `tests/e2e/steer-attribution.spec.ts` (SC-006): scripted surface→visit set asserts ≥95% attribution
 
 **Checkpoint**: the network layer compounds; the steered gate has data
 
@@ -174,14 +174,14 @@ Per plan.md structure: `app/` (frontend, two Vite entries), `supabase/` (migrati
 
 ### Tests for User Story 6 (write first, must fail)
 
-- [ ] T049 [P] [US6] Contract tests for `get_dashboard` + `share_weekly_note` in `tests/contract/dashboard.test.ts`
+- [x] T049 [P] [US6] Contract tests for `get_dashboard` + `share_weekly_note` in `tests/contract/dashboard.test.ts`
 
 ### Implementation for User Story 6
 
-- [ ] T050 [US6] Migration `supabase/migrations/0010_rpc_dashboard.sql`: `get_dashboard` RPC over owner-scoped aggregate views; weekly note composed by deterministic template from real aggregates (Art. XII — no LLM in v1)
-- [ ] T051 [US6] Edge function `supabase/functions/share-weekly-note/index.ts`: read-only weekly note email to co-owner (FR-030)
-- [ ] T052 [US6] Wire BusinessApp dashboard (note, stats with deltas, perk performance, activity feed, 14-day pattern from real data) in `app/src/business/BusinessApp.jsx`
-- [ ] T053 [US6] Extend `tests/integration/rls-privacy.test.ts` to every dashboard view/RPC (completes SC-005 enumeration)
+- [x] T050 [US6] Migration `supabase/migrations/0010_rpc_dashboard.sql`: `get_dashboard` RPC over owner-scoped aggregate views; weekly note composed by deterministic template from real aggregates (Art. XII — no LLM in v1)
+- [x] T051 [US6] Edge function `supabase/functions/share-weekly-note/index.ts`: read-only weekly note email to co-owner (FR-030)
+- [x] T052 [US6] Wire BusinessApp dashboard (note, stats with deltas, perk performance, activity feed, 14-day pattern from real data) in `app/src/business/BusinessApp.jsx`
+- [x] T053 [US6] Extend `tests/integration/rls-privacy.test.ts` to every dashboard view/RPC (completes SC-005 enumeration)
 
 **Checkpoint**: the $79 value surface is real
 
@@ -195,14 +195,14 @@ Per plan.md structure: `app/` (frontend, two Vite entries), `supabase/` (migrati
 
 ### Tests for User Story 7 (write first, must fail)
 
-- [ ] T054 [P] [US7] Contract tests for `approve_business`/`decline_business` (duplicate hints), `curate_founding_pick`, `rotate_code`, `read_gate_metrics` (shape incl. validity + verdict-eligibility), `void_stamp` (history-preserving), `list_staff_entry_audit` in `tests/contract/admin.test.ts`
+- [x] T054 [P] [US7] Contract tests for `approve_business`/`decline_business` (duplicate hints), `curate_founding_pick`, `rotate_code`, `read_gate_metrics` (shape incl. validity + verdict-eligibility), `void_stamp` (history-preserving), `list_staff_entry_audit` in `tests/contract/admin.test.ts`
 
 ### Implementation for User Story 7
 
-- [ ] T055 [US7] Migration `supabase/migrations/0011_rpc_admin.sql`: all admin RPCs above (void = status flip + reason, never delete — Art. II/XIV)
-- [ ] T056 [P] [US7] Migration `supabase/migrations/0012_snapshots.sql`: nightly pg_cron `gate_metric_snapshots` writer; Aug 15 / Nov 1 reads are snapshot rows (R6)
-- [ ] T057 [US7] Admin surface `app/src/admin/`: approvals queue (duplicate hints), picks curation per town, rotation panel, gate dashboard vs thresholds with validity labels, staff-entry audit view
-- [ ] T058 [US7] Gates integration test `tests/integration/gates.test.ts`: fresh-seed → INSUFFICIENT_SAMPLE everywhere, never errors (SC-004); seeded clock-advanced scenario → June 20 paying count + Aug 15 verdict-eligibility (SC-010)
+- [x] T055 [US7] Migration `supabase/migrations/0011_rpc_admin.sql`: all admin RPCs above (void = status flip + reason, never delete — Art. II/XIV)
+- [x] T056 [P] [US7] Migration `supabase/migrations/0012_snapshots.sql`: nightly pg_cron `gate_metric_snapshots` writer; Aug 15 / Nov 1 reads are snapshot rows (R6)
+- [x] T057 [US7] Admin surface `app/src/admin/`: approvals queue (duplicate hints), picks curation per town, rotation panel, gate dashboard vs thresholds with validity labels, staff-entry audit view
+- [x] T058 [US7] Gates integration test `tests/integration/gates.test.ts`: fresh-seed → INSUFFICIENT_SAMPLE everywhere, never errors (SC-004); seeded clock-advanced scenario → June 20 paying count + Aug 15 verdict-eligibility (SC-010)
 
 **Checkpoint**: the experiment apparatus is complete — the company can score its own bet
 

@@ -1,0 +1,38 @@
+-- ============================================================
+-- 0008_rpc_passport.sql — US4 (T042): get_my_passport verification.
+--
+-- VERIFICATION RESULT: get_my_passport is ALREADY defined in
+-- 0006_rpc_checkin.sql and conforms to contracts/api.md §2.4 with ZERO gaps.
+-- This migration intentionally adds no function definition; it documents the
+-- verification so the migration numbering stays continuous (T042).
+--
+-- Checked against contract §2.4 (response view `my_passport`):
+--   patron { id, display_name, claimed }
+--     - claimed = (patrons.claimed_at IS NOT NULL)               ✓ (0006)
+--   businesses[] { business_slug, name, town, stamp_count,
+--                  stamp_dates[], perks[{ perk_id, name, current,
+--                  threshold, ready }] }
+--     - town surfaces the town NAME via join towns t             ✓ (0006)
+--     - stamp_dates are jsonb_agg(... ORDER BY local_date) → ascending  ✓ (0006)
+--     - stamp_count / perk current count only trust_valid AND
+--       voided_at IS NULL stamps (trust model, Art. II/III)      ✓ (0006)
+--     - perks ordered by visit_threshold; ready = current >= threshold  ✓ (0006)
+--     - businesses array ordered by name                         ✓ (0006)
+--   region { towns_visited, towns_total, milestones[{ id, name,
+--            unlocked_at }] }
+--     - towns_visited = distinct towns from valid stamps this season    ✓ (0006)
+--     - towns_total = count(towns) in the season's region             ✓ (0006)
+--     - milestones list comes from milestone_unlocks (unlocked_at)     ✓ (0006)
+--   Errors: UNAUTHENTICATED when current_patron_id() is null       ✓ (0006)
+--
+-- Milestone UNLOCK logic (town-first-visit threshold crossing) lives in the
+-- record_check_in transaction via checkin_progress() (0006) and is therefore
+-- atomic with the stamp insert — NOT duplicated here (per T042 + tasks.md note).
+--
+-- No `create or replace function get_my_passport` is needed. If a future
+-- contract change introduces a gap, replace the function here with a full,
+-- improved copy (this header documents the current conformance baseline).
+-- ============================================================
+
+-- (no DDL — verification-only migration)
+select 1 where false;

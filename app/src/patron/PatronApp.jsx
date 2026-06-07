@@ -11,10 +11,18 @@ import {
   Field, Input, Switch, Tabs, Stat, Notice, Row, Divider,
   Stamp, StampGrid, WalletPass, ProgressMeter, SealMark,
 } from "../ds.js";
-import { ME, BUSINESSES, MY_STAMPS } from "../data.js";
+import { ME, BUSINESSES } from "../data.js";
+import { usePassport } from "./usePassport.js";
+import { useDiscovery, useBusinessDetail } from "./useDiscovery.js";
 
 // Copy rule (design README): "2 visits to go" — with correct singulars.
 const visits = (n) => `${n} ${n === 1 ? "visit" : "visits"}`;
+
+// T039 — patron-facing perk-ready copy (shown wherever a perk hits threshold).
+const PERK_READY_COPY = "Ready — show this at the register";
+
+// "N of 12 towns" (singular helper, no rating affordances — brand rules).
+const townLabel = (n) => `${n} ${n === 1 ? "town" : "towns"}`;
 
 // ---- Screen chrome -----------------------------------------
 
@@ -81,13 +89,30 @@ function TabBar({ value, onChange }) {
 
 // ---- Patron Home --------------------------------------------
 
-function PatronHome({ onSelectBiz, onGoTo, justStampedId }) {
-  const hero = BUSINESSES.find(b => b.id === "heron");
-  const grouped = {};
-  MY_STAMPS.forEach((s) => {
-    grouped[s.code] = grouped[s.code] || [];
-    grouped[s.code].push(s);
-  });
+function PatronHome({ onSelectBiz }) {
+  const { passport, loading } = usePassport();
+
+  if (loading || !passport) {
+    return (
+      <div style={{ paddingBottom: 24 }}>
+        <TopBar title="Passport"
+          trailing={<IconButton label="Settings"><Icon name="settings" size={20}/></IconButton>}
+        />
+        <div style={{ padding: "40px 16px", textAlign: "center", color: "var(--ink-500)", fontSize: 14 }}>
+          Loading your passport…
+        </div>
+      </div>
+    );
+  }
+
+  const { hero, businesses, region } = passport;
+  const totalStamps = businesses.reduce((sum, b) => sum + b.stampCount, 0);
+  const heroPerk = hero?.perk ?? null;
+  const heroRemaining = heroPerk ? Math.max(0, heroPerk.threshold - heroPerk.current) : 0;
+  // Honest greeting: a real patron with no display name gets no invented one
+  // (mock fallback still supplies ME.firstName when there is no backend).
+  const firstName = passport.patron.displayName;
+  const milestoneCount = region.milestones.length;
 
   return (
     <div style={{ paddingBottom: 24 }}>
@@ -95,7 +120,7 @@ function PatronHome({ onSelectBiz, onGoTo, justStampedId }) {
         trailing={<IconButton label="Settings"><Icon name="settings" size={20}/></IconButton>}
       />
 
-      {/* Hero — current featured pass */}
+      {/* Hero — top-progress pass */}
       <div style={{ padding: "18px 16px 8px" }}>
         <div style={{
           display: "flex", alignItems: "baseline", justifyContent: "space-between",
@@ -108,89 +133,128 @@ function PatronHome({ onSelectBiz, onGoTo, justStampedId }) {
               lineHeight: 1.1, marginTop: 4, letterSpacing: "-0.012em",
               fontVariationSettings: '"opsz" 32',
             }}>
-              Welcome back, {ME.firstName}.
+              {firstName ? `Welcome back, ${firstName}.` : "Welcome back."}
             </div>
           </div>
         </div>
 
-        <div style={{ transform: "scale(0.92)", transformOrigin: "top center", marginBottom: -22 }}>
-          <WalletPass
-            businessName={hero.name}
-            region={hero.town}
-            count={hero.stamps} total={hero.perkTotal}
-            perkLabel={hero.perkLabel}
-            perkSub={hero.perkSub}
-            stampCode={hero.code}
-            serial="UDP·NRWB·a7q9"
-            expires="11·2026"
-            style={{ margin: "0 auto" }}
-          />
+        {hero ? (
+          <div style={{ transform: "scale(0.92)", transformOrigin: "top center", marginBottom: -22 }}>
+            <WalletPass
+              businessName={hero.name}
+              region={hero.town}
+              count={heroPerk ? heroPerk.current : hero.stampCount}
+              total={heroPerk ? heroPerk.threshold : hero.stampCount}
+              perkLabel={heroPerk ? heroPerk.name : "Your pass"}
+              perkSub={heroPerk && heroPerk.ready ? PERK_READY_COPY : (heroPerk ? `${visits(heroRemaining)} to go` : "")}
+              stampCode={hero.slug}
+              expires="11·2026"
+              style={{ margin: "0 auto" }}
+            />
+          </div>
+        ) : (
+          <Card style={{ padding: "16px" }}>
+            <div style={{ fontSize: 14, color: "var(--ink-700)", lineHeight: 1.5 }}>
+              Your passport is ready. Scan the QR at any participating register to earn your first stamp.
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* Hero perk progress (T039 — ready treatment) */}
+      {heroPerk ? (
+        <div style={{ padding: "8px 16px 14px" }}>
+          <Card style={{ padding: "14px 16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+              <span style={{ fontWeight: 600 }}>{heroPerk.name}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-500)" }}>
+                {heroPerk.current}/{heroPerk.threshold}
+              </span>
+            </div>
+            <ProgressMeter
+              count={heroPerk.current}
+              total={heroPerk.threshold}
+              remainingLabel={heroPerk.ready ? "Ready" : `${visits(heroRemaining)} to go`}
+            />
+            {heroPerk.ready ? (
+              <div style={{ marginTop: 12 }}>
+                <Badge variant="solid-pine">{PERK_READY_COPY}</Badge>
+              </div>
+            ) : (
+              <div style={{ fontSize: 13, color: "var(--ink-700)", marginTop: 10 }}>
+                You&apos;re <strong>{visits(heroRemaining)}</strong> from {heroPerk.name.toLowerCase()}.
+              </div>
+            )}
+          </Card>
         </div>
-      </div>
+      ) : null}
 
-      {/* Perk progress */}
-      <div style={{ padding: "8px 16px 14px" }}>
-        <Card style={{ padding: "14px 16px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-            <span style={{ fontWeight: 600 }}>{hero.perkLabel}</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-500)" }}>
-              {hero.stamps}/{hero.perkTotal}
-            </span>
-          </div>
-          <ProgressMeter count={hero.stamps} total={hero.perkTotal} remainingLabel={`${visits(hero.perkTotal - hero.stamps)} to go`}/>
-          <div style={{ fontSize: 13, color: "var(--ink-700)", marginTop: 10 }}>
-            Mira left a note on yours — <em>"Save your fifth for a slow afternoon."</em>
-          </div>
-        </Card>
-      </div>
-
-      {/* My stamps */}
+      {/* My stamps — grouped per business with real dates */}
       <div style={{ padding: "8px 16px 20px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
           <h3 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Your stamps</h3>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-500)" }}>
-            {MY_STAMPS.length} · season 1
+            {totalStamps} · season 1
           </span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          {Object.entries(grouped).map(([code, stamps]) => {
-            const biz = BUSINESSES.find(b => b.code === code);
-            return (
-              <div key={code} onClick={() => onSelectBiz(biz.id)} style={{ cursor: "pointer" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 15 }}>{biz.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--ink-500)" }}>{biz.town} · {stamps.length} visits</div>
+        {businesses.length === 0 ? (
+          <Card style={{ padding: "16px" }}>
+            <div style={{ fontSize: 13, color: "var(--ink-500)", lineHeight: 1.5 }}>
+              No stamps yet. Your first visit starts the season.
+            </div>
+          </Card>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            {businesses.map((biz) => {
+              const ready = biz.perk?.ready;
+              const total = biz.perk?.threshold ?? Math.max(biz.stampCount, 1);
+              return (
+                <div key={biz.slug} onClick={() => onSelectBiz(biz.slug)} style={{ cursor: "pointer" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 15 }}>{biz.name}</div>
+                      <div style={{ fontSize: 12, color: "var(--ink-500)" }}>{biz.town} · {visits(biz.stampCount)}</div>
+                    </div>
+                    {ready ? <Badge variant="solid-pine">{PERK_READY_COPY}</Badge> : null}
                   </div>
-                  {stamps.length >= biz.perkTotal ? <Badge variant="solid-pine">Perk ready</Badge> : null}
+                  <StampGrid
+                    size={48}
+                    gap={8}
+                    columns={total}
+                    total={total}
+                    stamps={biz.stamps.map((s) => ({ label: s.label, date: s.date, rotate: s.rotate, state: "earned" }))}
+                  />
                 </div>
-                <StampGrid
-                  size={48}
-                  gap={8}
-                  columns={biz.perkTotal}
-                  total={biz.perkTotal}
-                  stamps={stamps.map(s => ({
-                    label: s.code, date: s.date, rotate: s.rotate,
-                    state: justStampedId === biz.id && s === stamps[stamps.length-1] ? "earned" : "earned",
-                  }))}
-                />
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Region progress */}
+      {/* Region progress — "N of 12 towns" + milestones */}
       <div style={{ padding: "0 16px 8px" }}>
         <Card variant="kraft" style={{ padding: "16px" }}>
           <div className="gl-eyebrow" style={{ color: "var(--pine-700)" }}>This season</div>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, lineHeight: 1.15, margin: "4px 0 12px", letterSpacing: "-0.01em" }}>
-            4 of 12 Upper Delaware towns
+            {region.townsVisited} of {region.townsTotal} Upper Delaware towns
           </div>
-          <ProgressMeter count={4} total={12} tone="ochre" remainingLabel="8 towns to go"/>
-          <div style={{ fontSize: 13, color: "var(--ink-700)", marginTop: 10 }}>
-            Visit a business in any new town to add it to your passport.
-          </div>
+          <ProgressMeter
+            count={region.townsVisited}
+            total={region.townsTotal}
+            tone="ochre"
+            remainingLabel={`${townLabel(Math.max(0, region.townsTotal - region.townsVisited))} to go`}
+          />
+          {milestoneCount > 0 ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+              {region.milestones.map((m) => (
+                <Badge key={m.id} variant="pine">{m.name}</Badge>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 13, color: "var(--ink-700)", marginTop: 10 }}>
+              Visit a business in any new town to add it to your passport.
+            </div>
+          )}
         </Card>
       </div>
     </div>
@@ -392,27 +456,31 @@ function WalletAddSheet({ biz, onAdd, onClose }) {
 // ---- Discover ------------------------------------------------
 
 function DiscoverScreen({ onSelectBiz }) {
-  const [view, setView] = useState("Nearby");
+  // useDiscovery fires recordImpressions ONCE per render over all visible ids.
+  const { businesses, loading } = useDiscovery();
+
   return (
     <div style={{ paddingBottom: 24 }}>
       <TopBar title="Discover" trailing={<IconButton label="Search"><Icon name="search" size={20}/></IconButton>}/>
 
-      <div style={{ padding: "12px 16px 0", display: "flex", justifyContent: "center" }}>
-        <Tabs tabs={["Nearby", "Founding picks", "Saved"]} value={view} onChange={setView}/>
-      </div>
-
       <div style={{ padding: "16px 16px 8px" }}>
-        <div className="gl-eyebrow">Ranked by verified return visits this season</div>
+        <div className="gl-eyebrow">Founding picks across the Upper Delaware</div>
         <div style={{ color: "var(--ink-500)", fontSize: 13, marginTop: 6 }}>
-          No paid placement, ever. <a href="#" style={{ color: "var(--text-link)" }}>How this ranks →</a>
+          Hand-picked, never ranked. No paid placement, ever.
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "8px 16px" }}>
-        {BUSINESSES.map((biz) => (
-          <BusinessCard key={biz.id} biz={biz} onClick={() => onSelectBiz(biz.id)}/>
-        ))}
-      </div>
+      {loading ? (
+        <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--ink-500)", fontSize: 14 }}>
+          Loading the region…
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "8px 16px" }}>
+          {businesses.map((biz) => (
+            <BusinessCard key={biz.slug} biz={biz} onClick={() => onSelectBiz(biz.slug)}/>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -422,52 +490,38 @@ function BusinessCard({ biz, onClick }) {
     <Card onClick={onClick} style={{ padding: 16, cursor: "pointer" }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
         <div style={{ flex: 1 }}>
-          {biz.eyebrow ? (
+          {biz.curationLabel ? (
             <div style={{
               fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-              letterSpacing: "0.14em", color:
-                biz.eyebrowTone === "stamp" ? "var(--stamp-700)" :
-                biz.eyebrowTone === "ochre" ? "var(--ochre-700)" :
-                "var(--pine-700)",
+              letterSpacing: "0.14em", color: "var(--stamp-700)",
               marginBottom: 4,
             }}>
-              {biz.eyebrow}
+              {biz.curationLabel}
             </div>
           ) : null}
           <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, lineHeight: 1.15, letterSpacing: "-0.01em" }}>
             {biz.name}
           </div>
           <div style={{ fontSize: 13, color: "var(--ink-500)", marginTop: 2 }}>
-            {biz.town} · {biz.kind}
+            {biz.town}{biz.category ? ` · ${biz.category}` : ""}
           </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-          <Badge variant={biz.open ? "pine" : undefined}>
-            {biz.open ? "Open now" : "Closed today"}
-          </Badge>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-500)" }}>
-            {biz.distance}
-          </span>
         </div>
       </div>
 
       <div style={{
         marginTop: 12, padding: "10px 12px",
         background: "var(--paper-100)", borderRadius: 10,
-        display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
+        display: "flex", alignItems: "center", gap: 8,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon name="users" size={18} style={{ color: "var(--pine-700)" }}/>
-          <span style={{ fontSize: 13, color: "var(--ink-1000)" }}>
-            <strong>{biz.regulars}</strong> verified regulars
-          </span>
-        </div>
-        {biz.stamps > 0 ? (
-          <span style={{ fontSize: 12, color: "var(--ink-700)" }}>
-            You&apos;re <strong>{visits(biz.perkTotal - biz.stamps)}</strong> from {biz.perkLabel.toLowerCase()}
+        <Icon name="users" size={18} style={{ color: "var(--pine-700)" }}/>
+        {biz.regularsEmpty ? (
+          <span style={{ fontSize: 13, color: "var(--ink-700)" }}>
+            Nobody&apos;s been a regular here yet. Be the first.
           </span>
         ) : (
-          <span style={{ fontSize: 12, color: "var(--ink-500)" }}>You haven&apos;t been yet</span>
+          <span style={{ fontSize: 13, color: "var(--ink-1000)" }}>
+            <strong>{biz.regulars}</strong> verified {biz.regulars === 1 ? "regular" : "regulars"} this season
+          </span>
         )}
       </div>
     </Card>
@@ -477,9 +531,25 @@ function BusinessCard({ biz, onClick }) {
 // ---- Business detail ----------------------------------------
 
 function BusinessDetail({ bizId, onBack }) {
-  const biz = BUSINESSES.find((b) => b.id === bizId);
-  if (!biz) return null;
-  const mine = MY_STAMPS.filter(s => s.code === biz.code);
+  // bizId is a business slug. useBusinessDetail fires one business_detail
+  // impression on open (the steer pipeline).
+  const { detail: biz, loading } = useBusinessDetail(bizId);
+
+  if (loading || !biz) {
+    return (
+      <div style={{ paddingBottom: 24 }}>
+        <TopBar title="Loading…" onBack={onBack}/>
+        <div style={{ padding: "40px 16px", textAlign: "center", color: "var(--ink-500)", fontSize: 14 }}>
+          Loading…
+        </div>
+      </div>
+    );
+  }
+
+  const myPerk = biz.myProgress?.perks?.[0] ?? null;
+  const myStampCount = biz.myProgress?.stampCount ?? 0;
+  const perkReady = myPerk ? myPerk.current >= myPerk.threshold : false;
+  const perkRemaining = myPerk ? Math.max(0, myPerk.threshold - myPerk.current) : 0;
 
   return (
     <div style={{ paddingBottom: 24 }}>
@@ -502,44 +572,68 @@ function BusinessDetail({ bizId, onBack }) {
       </div>
 
       <div style={{ padding: "18px 16px 8px", display: "flex", gap: 16 }}>
-        <Stat label="Verified regulars" value={biz.regulars}/>
-        <Stat label="Your visits" value={mine.length}/>
+        {biz.regularsEmpty ? (
+          <div style={{ fontSize: 13, color: "var(--ink-700)", lineHeight: 1.4 }}>
+            Nobody&apos;s been a regular here yet. Be the first.
+          </div>
+        ) : (
+          <Stat label="Verified regulars" value={biz.regulars}/>
+        )}
+        <Stat label="Your visits" value={myStampCount}/>
       </div>
 
-      <div style={{ padding: "8px 16px" }}>
-        <Card style={{ padding: "14px 16px" }}>
-          <div className="gl-eyebrow" style={{ color: "var(--stamp-700)" }}>Your perk</div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, lineHeight: 1.15, marginTop: 4, letterSpacing: "-0.01em" }}>
-            {biz.perkLabel}
-          </div>
-          <div style={{ fontSize: 13, color: "var(--ink-700)", marginTop: 4, marginBottom: 12 }}>
-            {biz.perkSub}
-          </div>
-          <ProgressMeter count={biz.stamps} total={biz.perkTotal} remainingLabel={`${visits(biz.perkTotal - biz.stamps)} to go`}/>
-          <div style={{ marginTop: 12 }}>
-            <StampGrid
-              size={44} gap={8} columns={biz.perkTotal} total={biz.perkTotal}
-              stamps={mine.slice(0, biz.stamps).map((s) => ({ label: biz.code, date: s.date, rotate: s.rotate }))}
+      {myPerk ? (
+        <div style={{ padding: "8px 16px" }}>
+          <Card style={{ padding: "14px 16px" }}>
+            <div className="gl-eyebrow" style={{ color: "var(--stamp-700)" }}>Your perk</div>
+            <ProgressMeter
+              count={myPerk.current}
+              total={myPerk.threshold}
+              remainingLabel={perkReady ? "Ready" : `${visits(perkRemaining)} to go`}
             />
-          </div>
-        </Card>
-      </div>
+            {perkReady ? (
+              <div style={{ marginTop: 12 }}>
+                <Badge variant="solid-pine">{PERK_READY_COPY}</Badge>
+              </div>
+            ) : (
+              <div style={{ fontSize: 13, color: "var(--ink-700)", marginTop: 10 }}>
+                You&apos;re <strong>{visits(perkRemaining)}</strong> from your perk.
+              </div>
+            )}
+            <div style={{ marginTop: 12 }}>
+              <StampGrid
+                size={44} gap={8} columns={myPerk.threshold} total={myPerk.threshold}
+                stamps={Array.from({ length: Math.min(myPerk.current, myPerk.threshold) }).map((_, i) => ({
+                  label: biz.slug, rotate: [-3, 2, -2, 3, -1][i % 5],
+                }))}
+              />
+            </div>
+          </Card>
+        </div>
+      ) : null}
 
-      <div style={{ padding: "12px 16px" }}>
-        <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 600 }}>Owner&apos;s note</h3>
-        <Card variant="kraft" style={{ padding: "14px 16px", borderLeft: "3px solid var(--stamp-700)" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 16, lineHeight: 1.4, color: "var(--ink-1000)" }}>
-            "Save your fifth for a slow afternoon. We&apos;ll set up by the window."
-          </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-500)", marginTop: 8, letterSpacing: "0.04em" }}>
-            — Mira, owner since 2019
-          </div>
-        </Card>
-      </div>
+      {biz.ownerNote ? (
+        <div style={{ padding: "12px 16px" }}>
+          <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 600 }}>Owner&apos;s note</h3>
+          <Card variant="kraft" style={{ padding: "14px 16px", borderLeft: "3px solid var(--stamp-700)" }}>
+            <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 16, lineHeight: 1.4, color: "var(--ink-1000)" }}>
+              {biz.ownerNote}
+            </div>
+          </Card>
+        </div>
+      ) : null}
 
       <div style={{ padding: "12px 16px 0", display: "flex", gap: 8 }}>
-        <Button variant="secondary" leadingIcon={<Icon name="map-pin" size={18}/>}>Directions</Button>
-        <Button variant="ghost" leadingIcon={<Icon name="calendar" size={18}/>}>Hours</Button>
+        <Button
+          variant="secondary"
+          leadingIcon={<Icon name="map-pin" size={18}/>}
+          onClick={() => { if (biz.directionsUrl) window.open(biz.directionsUrl, "_blank", "noopener"); }}
+        >
+          Directions
+        </Button>
+        {biz.hours ? (
+          <Button variant="ghost" leadingIcon={<Icon name="calendar" size={18}/>}>{biz.hours}</Button>
+        ) : null}
       </div>
     </div>
   );
@@ -600,7 +694,7 @@ function PatronApp({ initialTab = "home" }) {
   if (detail) {
     body = <BusinessDetail bizId={detail} onBack={() => setDetail(null)}/>;
   } else if (tab === "home") {
-    body = <PatronHome onSelectBiz={setDetail} onGoTo={setTab}/>;
+    body = <PatronHome onSelectBiz={setDetail}/>;
   } else if (tab === "discover") {
     body = <DiscoverScreen onSelectBiz={setDetail}/>;
   } else if (tab === "checkin") {

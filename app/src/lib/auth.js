@@ -29,6 +29,9 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
  */
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
+    // Shared with the lean check-in entry (checkin-api.js): one identity
+    // across both bundles — the scan and the passport are the same patron.
+    storageKey: "gl-auth",
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,

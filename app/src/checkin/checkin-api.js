@@ -15,7 +15,11 @@
 const URL = import.meta.env.VITE_SUPABASE_URL;
 const ANON = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const SESSION_KEY = "gl_checkin_session";
+// SHARED with the main SPA (auth.js sets supabase-js storageKey to the same
+// value): the patron who scans IS the patron who opens the passport. The
+// stored value is the full GoTrue session JSON, the exact shape supabase-js
+// reads, so either entry can mint it and the other resumes it.
+const SESSION_KEY = "gl-auth";
 const DEVICE_KEY = "gl_device";
 
 /** Stable per-device token (mirrors auth.js deviceToken). */
@@ -58,6 +62,21 @@ export async function ensurePatronSession() {
   if (existing?.access_token && existing.expires_at && existing.expires_at * 1000 > Date.now() + 30_000) {
     return existing.access_token;
   }
+  // Expired but refreshable (e.g. an SPA session from a prior visit): refresh
+  // instead of minting a NEW anonymous patron — identity must not fork.
+  if (existing?.refresh_token) {
+    const r = await fetch(`${URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: ANON },
+      body: JSON.stringify({ refresh_token: existing.refresh_token }),
+    });
+    const refreshed = await r.json().catch(() => null);
+    if (r.ok && refreshed?.access_token) {
+      saveSession(refreshed); // full session JSON — supabase-js readable
+      return refreshed.access_token;
+    }
+    // fall through to a fresh anonymous session if refresh fails
+  }
   const res = await fetch(`${URL}/auth/v1/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: ANON },
@@ -67,7 +86,7 @@ export async function ensurePatronSession() {
   if (!res.ok || !data.access_token) {
     throw normalizeError(data, "UNAUTHENTICATED");
   }
-  saveSession({ access_token: data.access_token, expires_at: data.expires_at });
+  saveSession(data); // FULL session JSON (incl. refresh_token + user)
   return data.access_token;
 }
 

@@ -15,7 +15,7 @@
 //   npx vitest run tests/integration/rls-privacy.test.ts
 // ===========================================================================
 import { beforeAll, describe, expect, it } from "vitest";
-import { type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   SEED,
   serviceClient,
@@ -24,6 +24,9 @@ import {
   anonPatronClient,
   ensureSeedAuthPasswords,
 } from "./helpers";
+
+const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.API_URL ?? "http://127.0.0.1:54321";
+const ANON_KEY = process.env.SUPABASE_ANON_KEY ?? process.env.ANON_KEY ?? "";
 
 const OWNER_B_EMAIL = `owner-b-${crypto.randomUUID().slice(0, 8)}@test`;  // unique per run: repeated runs accumulate auth users
 const OWNER_B_PASSWORD = "test-password-owner-b";
@@ -362,5 +365,55 @@ describe("Art. V privacy boundary (data-model §3 matrix)", () => {
     // Both businesses represented.
     expect(rows.some((r) => r.business_id === SEED.businessId)).toBe(true);
     expect(rows.some((r) => r.business_id === businessBId)).toBe(true);
+  });
+});
+
+// ===========================================================================
+// T053 — the owner dashboard surface (get_dashboard) honors the same boundary.
+// The shared boundary-test patron has stamps at BOTH business A (The Heron) and
+// business B (The Otter). Owner A's dashboard must contain zero references to
+// business B's id/slug or that patron's other-business activity; owner B asking
+// for business A's dashboard by id must be FORBIDDEN.
+// ===========================================================================
+function collectStrings(node: unknown, acc: string[] = []): string[] {
+  if (typeof node === "string") acc.push(node);
+  else if (Array.isArray(node)) node.forEach((n) => collectStrings(n, acc));
+  else if (node && typeof node === "object") {
+    Object.values(node).forEach((n) => collectStrings(n, acc));
+  }
+  return acc;
+}
+
+describe("Art. V dashboard boundary (T053, get_dashboard / SC-005)", () => {
+  it("owner A's get_dashboard references zero business-B ids/slugs", async () => {
+    const owner = await ownerClient(SEED.ownerEmail);
+    const { data, error } = await owner.rpc("get_dashboard", { p_business_id: null });
+    expect(error).toBeNull();
+    expect(data).toBeTruthy();
+
+    const strings = collectStrings(data);
+    // business B id never appears anywhere in the payload.
+    expect(strings).not.toContain(businessBId);
+    // business B's slug ("the-otter") never appears.
+    expect(strings.some((s) => s.includes("the-otter"))).toBe(false);
+
+    // activity_feed only ever names this owner's own business activity; the
+    // event labels are the only allowed strings — never a cross-business id.
+    for (const e of data.activity_feed ?? []) {
+      expect(["stamp", "redemption", "staff_stamp"]).toContain(e.event);
+    }
+  });
+
+  it("owner B calling get_dashboard(p_business_id = A's id) → FORBIDDEN", async () => {
+    const ownerB = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } });
+    const signIn = await ownerB.auth.signInWithPassword({
+      email: OWNER_B_EMAIL,
+      password: OWNER_B_PASSWORD,
+    });
+    expect(signIn.error).toBeNull();
+
+    const { error } = await ownerB.rpc("get_dashboard", { p_business_id: SEED.businessId });
+    expect(error).not.toBeNull();
+    expect(error!.message).toContain("FORBIDDEN");
   });
 });
