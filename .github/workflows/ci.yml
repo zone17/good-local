@@ -42,7 +42,9 @@ jobs:
       - name: Start Supabase local stack
         run: supabase start
       - name: Export stack keys
-        run: supabase status -o env >> "$GITHUB_ENV"
+        # `-o env` wraps values in double quotes; GITHUB_ENV takes lines
+        # verbatim, so strip them or supabase-js sees an invalid URL.
+        run: supabase status -o env | tr -d '"' >> "$GITHUB_ENV"
       - name: Apply migrations + seed
         run: supabase db reset --debug
       - name: Run vitest
