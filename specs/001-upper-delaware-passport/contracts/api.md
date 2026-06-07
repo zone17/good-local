@@ -212,6 +212,23 @@ Response:
 ```
 Errors: `BUSINESS_NOT_FOUND`.
 
+### 2.7 `add_wallet_pass` — record a passport add for the installs gate (RPC) *(added 2026-06-07, D-020)*
+
+Purpose: record that this patron added the passport (web passport today; platform pass behind the
+R5 A/B), writing one `wallet_pass_instances` row per `patron × platform` so the `passport_adds`
+gate metric (≥500 by Jul 31 sample floor — FR-033) counts it. An RPC, not an edge fn, so the lean
+check-in entry can write it over plain fetch without importing supabase-js (T032/T035, SC-008).
+Implemented in migration 0006; contracted retroactively when the arch audit found it undocumented.
+
+Context: `anon-patron`, `patron`. Risk tier: **2** (gate input). Idempotency: per
+`patron × platform` — a repeat call upserts (refreshes `last_updated_at`), never a second row.
+
+| Field | Type | Required | Validation |
+|---|---|---|---|
+| `platform` | enum | yes | `apple` \| `google`; any other value coerces to `google` (web passport) |
+
+Response: `{ "serial": "uuid-text", "platform": "google" }`. Errors: `UNAUTHENTICATED`.
+
 ---
 
 ## 3. Owner capabilities
@@ -381,11 +398,14 @@ Response: `[{ "patron_ref": "uuid", "display_name": "River" | null, "visits": 7,
 (`display_name` is null for anonymous patrons — the client renders the honest fallback, never an
 invented name.) Errors: `FORBIDDEN`.
 
-### 3.9 `switch_winter_tier` / `revert_founding_rate` (RPC → edge for Stripe write)
+### 3.9 `switch_winter_tier` / `revert_founding_rate` (edge fn: `update-subscription-plan`)
 
 Purpose: move to the $49 winter tier (Nov–Apr window) and revert to the locked founding rate
-(FR-003). The local intent is an RPC; the Stripe subscription-item swap is performed by an edge
-call (external Stripe secret), then reflected by the webhook (R4 single writer).
+(FR-003). Both verbs are carried by the single `update-subscription-plan` edge function (the
+Stripe subscription-item swap requires the Stripe secret — §1.4); the resulting state is reflected
+by the webhook (R4 single writer). *(Wording aligned to the implementation 2026-06-07, D-020 —
+the original "RPC → edge" phrasing described a split that was never needed: there is no local
+intent to record beyond what the webhook writes back.)*
 
 `switch_winter_tier` — Context: `owner`. Risk tier: **3**. Idempotency: no-op if already winter.
 
@@ -424,9 +444,24 @@ Response: `{ "business_id": "uuid", "status": "active", "approved_by": "uuid", "
 | `reason` | text | yes | recorded |
 
 Response: `{ "business_id": "uuid", "status": "declined", "subscription_cancelled": true }`.
-Both return `duplicate_hints` on the pending read (see `list_pending_businesses` shape):
-`[{ "business_id": "uuid", "name": "…", "match_on": "name+town" }]`.
 Errors: `BUSINESS_NOT_FOUND`, `INVALID_STATE`, `FORBIDDEN`.
+
+#### `list_pending_businesses` — the pending queue + duplicate hints (RPC, read) *(promoted to a full contract entry 2026-06-07, D-020)*
+
+Purpose: the approvals queue these two verbs act on; surfaces likely same-establishment duplicates
+before both go live (Edge Case: duplicate signup). Context: `admin`. Risk tier: **1**. No params.
+
+Response (oldest pending first):
+```json
+[
+  { "business_id": "uuid", "name": "The Laundry", "slug": "the-laundry",
+    "town": "narrowsburg", "town_name": "Narrowsburg", "category": "cafe",
+    "created_at": "2026-06-07T12:00:00Z",
+    "duplicate_hints": [{ "business_id": "uuid", "name": "The Laundry", "match_on": "name+town" }] }
+]
+```
+`duplicate_hints` lists other **pending** rows matching on `name+town` (case-insensitive); empty
+array when none. Errors: `FORBIDDEN`.
 
 ### 4.2 `curate_founding_pick` — set/unset/order picks per town (RPC)
 
@@ -604,10 +639,11 @@ automated without the UI.
 
 ---
 
-**Verb count: 27** — patron 7 (`record_check_in`, `record_impressions`, `claim_passport`,
-`link_device`, `get_my_passport`, `get_discovery`, `get_business_detail`); owner 12
-(`create_checkout_session`, `update_business_profile`, `publish_perk`, `update_perk`,
+**Verb count: 29** — patron 8 (`record_check_in`, `record_impressions`, `claim_passport`,
+`link_device`, `get_my_passport`, `get_discovery`, `get_business_detail`, `add_wallet_pass`);
+owner 12 (`create_checkout_session`, `update_business_profile`, `publish_perk`, `update_perk`,
 `set_perk_active`, `get_register_kit`, `staff_check_in`, `redeem_perk`, `get_dashboard`,
 `share_weekly_note`, `get_business_regulars`, `switch_winter_tier`/`revert_founding_rate` counted as the tier pair);
-admin 7 (`approve_business`/`decline_business`, `curate_founding_pick`, `rotate_code`,
-`read_gate_metrics`, `list_staff_entry_audit`, `void_stamp`); webhook 1 (`stripe-webhook`).
+admin 8 (`approve_business`/`decline_business`, `list_pending_businesses`, `curate_founding_pick`,
+`rotate_code`, `read_gate_metrics`, `list_staff_entry_audit`, `void_stamp`); webhook 1
+(`stripe-webhook`).
