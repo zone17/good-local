@@ -64,15 +64,15 @@ function AdminRoute() {
             This account is not an admin. (FORBIDDEN)
           </div>
         ) : null}
-        <label style={{ fontSize: 13 }}>
+        <label style={{ fontSize: 13, fontWeight: 600 }}>
           Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-            style={{ display: "block", width: "100%", marginTop: 4, padding: "8px 10px" }} />
+          <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
+            className="gl-input" style={{ marginTop: 4 }} />
         </label>
-        <label style={{ fontSize: 13 }}>
+        <label style={{ fontSize: 13, fontWeight: 600 }}>
           Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-            style={{ display: "block", width: "100%", marginTop: 4, padding: "8px 10px" }} />
+          <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)}
+            className="gl-input" style={{ marginTop: 4 }} />
         </label>
         {error ? <div style={{ color: "var(--clay-700, #9a3412)", fontSize: 13 }}>{error}</div> : null}
         <button type="submit" disabled={busy} style={{

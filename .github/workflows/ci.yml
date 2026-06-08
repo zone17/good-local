@@ -55,15 +55,19 @@ jobs:
         run: supabase status -o env | tr -d '"' >> "$GITHUB_ENV"
       - name: Apply migrations + seed
         run: |
-          # PostHog telemetry inside `db reset` intermittently 502s and the CLI
-          # treats it as fatal (DO_NOT_TRACK doesn't suppress it). Retry up to
-          # 3x — the 502 is transient, so a retry clears it.
+          # The Supabase CLI POSTs telemetry to PostHog during `db reset` and
+          # treats a 502 from it as fatal (DO_NOT_TRACK doesn't suppress it).
+          # Null-route the telemetry host so the call fails instantly + locally
+          # instead of hanging on a 502 upstream...
+          echo "127.0.0.1 eu.i.posthog.com app.posthog.com us.i.posthog.com" | sudo tee -a /etc/hosts >/dev/null
+          # ...and still retry up to 5x for any other transient (e.g. a storage
+          # container flapping on restart).
           n=0
           until supabase db reset --debug; do
             n=$((n+1))
-            if [ "$n" -ge 3 ]; then echo "db reset failed after $n attempts"; exit 1; fi
-            echo "db reset attempt $n failed (likely the PostHog 502 flake) — retrying in 5s…"
-            sleep 5
+            if [ "$n" -ge 5 ]; then echo "db reset failed after $n attempts"; exit 1; fi
+            echo "db reset attempt $n failed — retrying in 10s…"
+            sleep 10
           done
       - name: Run vitest
         # The dedicated "Apply migrations + seed" step above already reset the DB
@@ -127,15 +131,19 @@ jobs:
         run: supabase start
       - name: Apply migrations + seed
         run: |
-          # PostHog telemetry inside `db reset` intermittently 502s and the CLI
-          # treats it as fatal (DO_NOT_TRACK doesn't suppress it). Retry up to
-          # 3x — the 502 is transient, so a retry clears it.
+          # The Supabase CLI POSTs telemetry to PostHog during `db reset` and
+          # treats a 502 from it as fatal (DO_NOT_TRACK doesn't suppress it).
+          # Null-route the telemetry host so the call fails instantly + locally
+          # instead of hanging on a 502 upstream...
+          echo "127.0.0.1 eu.i.posthog.com app.posthog.com us.i.posthog.com" | sudo tee -a /etc/hosts >/dev/null
+          # ...and still retry up to 5x for any other transient (e.g. a storage
+          # container flapping on restart).
           n=0
           until supabase db reset --debug; do
             n=$((n+1))
-            if [ "$n" -ge 3 ]; then echo "db reset failed after $n attempts"; exit 1; fi
-            echo "db reset attempt $n failed (likely the PostHog 502 flake) — retrying in 5s…"
-            sleep 5
+            if [ "$n" -ge 5 ]; then echo "db reset failed after $n attempts"; exit 1; fi
+            echo "db reset attempt $n failed — retrying in 10s…"
+            sleep 10
           done
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
