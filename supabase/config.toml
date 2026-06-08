@@ -101,7 +101,12 @@ port = 54324
 # sender_name = "Admin"
 
 [storage]
-enabled = true
+# Disabled: the product uses no file storage (no uploads/buckets anywhere), and
+# the storage container intermittently 502s on startup, which `db reset` health-
+# checks and treats as fatal — the real cause of the recurring CI flake. With it
+# off the stack boots clean and `db reset` never touches it. Re-enable if/when a
+# real storage need lands.
+enabled = false
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
