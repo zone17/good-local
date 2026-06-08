@@ -535,8 +535,8 @@ function PerkBuilder({ onClose, business, onChanged }) {
           <IconButton bordered label="Close" onClick={onClose}><Icon name="x" size={18}/></IconButton>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 0 }}>
-          <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16, borderRight: "1px solid var(--ink-100)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1fr)", gap: 0 }}>
+          <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16, borderRight: "1px solid var(--ink-100)", minWidth: 0 }}>
             <Field label="Perk name" hint="What you'd say at the register.">
               <Input value={name} onChange={(e)=>setName(e.target.value)} placeholder="The Regular's Pour"/>
             </Field>
@@ -791,7 +791,7 @@ function SettingsView({ business, onChanged }) {
 
       <Card>
         <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>Business profile</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
           <Field label="Business name"><Input value={name} onChange={(e) => setName(e.target.value)}/></Field>
           <Field label="Hours" hint="Shown to patrons."><Input value={hours} onChange={(e) => setHours(e.target.value)}/></Field>
           <Field label="Owner note" hint="A line patrons see on your page."><Input value={ownerNote} onChange={(e) => setOwnerNote(e.target.value)}/></Field>
