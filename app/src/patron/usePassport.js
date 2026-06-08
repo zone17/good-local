@@ -86,6 +86,14 @@ function fromPassport(p) {
   };
 }
 
+// Honest empty passport — what a never-scanned patron (or a failed load) shows.
+const EMPTY_PASSPORT = {
+  patron: { id: null, displayName: null, claimed: false },
+  region: { townsVisited: 0, townsTotal: 12, milestones: [] },
+  businesses: [],
+  hero: null,
+};
+
 export function usePassport() {
   const [passport, setPassport] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -99,8 +107,12 @@ export function usePassport() {
       const data = await getMyPassport();
       setPassport(fromPassport(data));
     } catch (err) {
+      // Degrade to the honest empty passport rather than an infinite spinner:
+      // the screens key their empty state off an empty `businesses` array, so a
+      // transient failure (or a session that can't resolve) still renders the
+      // "scan a QR to begin" home instead of a dead "Loading…" (deploy fix).
       setError(err);
-      setPassport(null);
+      setPassport(EMPTY_PASSPORT);
     } finally {
       setLoading(false);
     }

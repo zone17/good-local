@@ -164,6 +164,32 @@ beforeAll(async () => {
   }
 });
 
+describe("get_my_passport — empty passport for a never-scanned patron (D-024)", () => {
+  it("a fresh anon session with no patron row returns an empty passport, not UNAUTHENTICATED", async () => {
+    const { client } = await anonPatronClient();
+    const { data, error } = await client.rpc("get_my_passport");
+    expect(error).toBeNull();
+    expect(data).toBeTruthy();
+    expect(Array.isArray(data.businesses)).toBe(true);
+    expect(data.businesses).toHaveLength(0);
+    expect(data.region.towns_visited).toBe(0);
+    expect(typeof data.region.towns_total).toBe("number");
+    expect(data.patron.claimed).toBe(false);
+  });
+
+  it("no session at all still raises UNAUTHENTICATED", async () => {
+    // Bare anon-key client with no user JWT — auth.uid() is null.
+    const bare = (await import("@supabase/supabase-js")).createClient(
+      process.env.SUPABASE_URL ?? process.env.API_URL ?? "http://127.0.0.1:54321",
+      process.env.SUPABASE_ANON_KEY ?? process.env.ANON_KEY ?? "",
+      { auth: { persistSession: false } },
+    );
+    const { error } = await bare.rpc("get_my_passport");
+    expect(error).not.toBeNull();
+    expect(error!.message).toContain("UNAUTHENTICATED");
+  });
+});
+
 describe("get_my_passport (contract §2.4)", () => {
   it("returns the grouped passport shape across two businesses / two towns", async () => {
     const { client, userId } = await anonPatronClient();
