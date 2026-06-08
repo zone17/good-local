@@ -176,6 +176,10 @@
 .gl-select {
   display: block;
   width: 100%;
+  /* border-box so min-height INCLUDES padding + border — without it the
+     52px tap-comfy min-height stacked with 12px padding + 1.5px border into
+     ~79px-tall boxes with top-misaligned text (every form was affected). */
+  box-sizing: border-box;
   min-height: var(--tap-comfy);
   padding: 12px 14px;
   font-family: var(--font-body);
