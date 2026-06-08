@@ -31,8 +31,11 @@ export function ProgressMeter({
             <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--ink-1000)" }}>{label}</span>
           ) : <span />}
           {remaining != null ? (
+            // ink-700 (not ink-500): the 12px mono label sits on kraft cards
+            // (#ece4d0) where ink-500 measures 4.46:1 — just under AA 4.5
+            // (Art. IX). ink-700 clears it on every surface.
             <span style={{
-              fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 500, color: "var(--ink-500)",
+              fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 500, color: "var(--ink-700)",
             }}>
               {remaining === 0 ? "earned" : (remainingLabel || `${remaining} to go`)}
             </span>
