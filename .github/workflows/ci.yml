@@ -66,6 +66,11 @@ jobs:
             sleep 5
           done
       - name: Run vitest
+        # The dedicated "Apply migrations + seed" step above already reset the DB
+        # (with retry). Skip the vitest globalSetup's own reset so it doesn't hit
+        # the PostHog 502 flake a second time inside the test process (D-016).
+        env:
+          SKIP_DB_RESET: "1"
         run: npx vitest run
 
   # 3) Brand: enforce the SC-009 brand rules (no emoji, no rating affordances,
