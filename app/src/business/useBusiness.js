@@ -50,7 +50,14 @@ export function useBusiness() {
       const { data: sessionData } = await supabase.auth.getSession();
       const session = sessionData?.session ?? null;
 
-      if (!session) {
+      // An owner authenticates with email/password (non-anonymous). A lingering
+      // ANONYMOUS patron session — created by visiting the patron app, persisted
+      // under the shared gl-auth key (D-017) — is NOT an owner, so it must still
+      // see OwnerSignIn (else /business shows "No program" with no way to log in).
+      const isAnon =
+        session?.user?.is_anonymous ??
+        session?.user?.app_metadata?.provider === "anonymous";
+      if (!session || isAnon) {
         setNeedsAuth(true);
         setBusiness(null);
         return;
