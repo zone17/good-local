@@ -54,8 +54,23 @@ jobs:
         # verbatim, so strip them or supabase-js sees an invalid URL.
         run: supabase status -o env | tr -d '"' >> "$GITHUB_ENV"
       - name: Apply migrations + seed
-        run: supabase db reset --debug
+        run: |
+          # PostHog telemetry inside `db reset` intermittently 502s and the CLI
+          # treats it as fatal (DO_NOT_TRACK doesn't suppress it). Retry up to
+          # 3x — the 502 is transient, so a retry clears it.
+          n=0
+          until supabase db reset --debug; do
+            n=$((n+1))
+            if [ "$n" -ge 3 ]; then echo "db reset failed after $n attempts"; exit 1; fi
+            echo "db reset attempt $n failed (likely the PostHog 502 flake) — retrying in 5s…"
+            sleep 5
+          done
       - name: Run vitest
+        # The dedicated "Apply migrations + seed" step above already reset the DB
+        # (with retry). Skip the vitest globalSetup's own reset so it doesn't hit
+        # the PostHog 502 flake a second time inside the test process (D-016).
+        env:
+          SKIP_DB_RESET: "1"
         run: npx vitest run
 
   # 3) Brand: enforce the SC-009 brand rules (no emoji, no rating affordances,
@@ -111,7 +126,17 @@ jobs:
       - name: Start Supabase local stack
         run: supabase start
       - name: Apply migrations + seed
-        run: supabase db reset --debug
+        run: |
+          # PostHog telemetry inside `db reset` intermittently 502s and the CLI
+          # treats it as fatal (DO_NOT_TRACK doesn't suppress it). Retry up to
+          # 3x — the 502 is transient, so a retry clears it.
+          n=0
+          until supabase db reset --debug; do
+            n=$((n+1))
+            if [ "$n" -ge 3 ]; then echo "db reset failed after $n attempts"; exit 1; fi
+            echo "db reset attempt $n failed (likely the PostHog 502 flake) — retrying in 5s…"
+            sleep 5
+          done
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       - name: Run Playwright (chromium)

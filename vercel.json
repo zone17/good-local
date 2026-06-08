@@ -5,6 +5,7 @@
   "installCommand": "npm install --prefix app",
   "framework": null,
   "rewrites": [
-    { "source": "/c/:path*", "destination": "/checkin.html" }
+    { "source": "/c/:path*", "destination": "/checkin.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

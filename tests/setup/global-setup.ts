@@ -49,7 +49,21 @@ export default function globalSetup(): void {
 
   try {
     console.log("[global-setup] supabase db reset — seeding the baseline…");
-    execFileSync("supabase", ["db", "reset"], { stdio: "pipe", timeout: 180_000 });
+    // `db reset` intermittently fails when the Supabase CLI's PostHog telemetry
+    // 502s (treated as fatal even with DO_NOT_TRACK). Retry up to 3x — the 502
+    // is transient, so a retry clears it.
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        execFileSync("supabase", ["db", "reset"], { stdio: "pipe", timeout: 180_000 });
+        lastErr = undefined;
+        break;
+      } catch (err) {
+        lastErr = err;
+        console.warn(`[global-setup] db reset attempt ${attempt} failed (likely the PostHog 502 flake) — retrying…`);
+      }
+    }
+    if (lastErr) throw lastErr;
   } finally {
     rmdirSync(lock);
   }
