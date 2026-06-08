@@ -572,9 +572,11 @@ function PerkBuilder({ onClose, business, onChanged }) {
             </div>
           </div>
 
-          <div style={{ padding: 24, background: "var(--paper-100)", display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ padding: 24, background: "var(--paper-100)", display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
             <div className="gl-eyebrow">Preview · patron pass</div>
-            <div style={{ display: "grid", placeItems: "center", transform: "scale(0.78)", transformOrigin: "top center", marginBottom: -90 }}>
+            {/* Native-sized to fit the preview column — the old transform:scale
+                hack left the unscaled 384px footprint, which the modal clipped. */}
+            <div style={{ display: "grid", placeItems: "center" }}>
               <WalletPass
                 businessName={business?.name ?? "Your business"}
                 region={business?.town ?? ""}
@@ -582,13 +584,12 @@ function PerkBuilder({ onClose, business, onChanged }) {
                 perkLabel={name || "Your perk name"}
                 perkSub={desc || "What the patron sees"}
                 stampCode={business?.code ?? ""}
+                style={{ "--pass-w": "280px", "--pass-h": "346px", boxSizing: "border-box" }}
               />
             </div>
-            <div style={{ marginTop: 100 }}>
-              <Notice tone="ochre" icon={<Icon name="info" size={18}/>}>
-                Patrons see this immediately the next time they check in. Existing stamps carry over.
-              </Notice>
-            </div>
+            <Notice tone="ochre" icon={<Icon name="info" size={18}/>}>
+              Patrons see this immediately the next time they check in. Existing stamps carry over.
+            </Notice>
           </div>
         </div>
 

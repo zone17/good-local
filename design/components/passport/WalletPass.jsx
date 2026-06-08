@@ -44,6 +44,11 @@ export function WalletPass({
       className={["gl-pass", className].filter(Boolean).join(" ")}
       style={{
         position: "relative",
+        // border-box so the 22px padding lives INSIDE --pass-w/--pass-h — without
+        // it a default 340px pass rendered ~384px wide and overflowed narrow
+        // containers (e.g. the perk-builder preview column). Callers can still
+        // override via `style`.
+        boxSizing: "border-box",
         width: "var(--pass-w)",
         height: "var(--pass-h)",
         background: t.bg,
