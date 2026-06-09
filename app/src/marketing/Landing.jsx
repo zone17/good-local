@@ -19,13 +19,13 @@ function Section({ children, style, id }) {
   );
 }
 
-const Display = ({ size = 40, children, style }) => (
-  <h2 style={{
+const Display = ({ size = 40, children, style, as: Tag = "h2" }) => (
+  <Tag style={{
     fontFamily: "var(--font-display)", fontWeight: 600, fontSize: size,
     lineHeight: 1.08, letterSpacing: "-0.018em", color: "var(--ink-1000)",
     fontVariationSettings: `"opsz" ${Math.min(size + 8, 48)}`, textWrap: "balance",
     margin: 0, ...style,
-  }}>{children}</h2>
+  }}>{children}</Tag>
 );
 
 const Eyebrow = ({ children, color = "var(--pine-700)" }) => (
@@ -45,7 +45,7 @@ export default function Landing() {
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.1fr) minmax(0,0.9fr)", gap: 48, alignItems: "center" }} className="gl-hero">
           <div>
             <Eyebrow>A regional passport · Starting on the Upper Delaware</Eyebrow>
-            <Display size={54}>The places worth coming back to.</Display>
+            <Display as="h1" size={54}>The places worth coming back to.</Display>
             <p style={{ fontSize: 18, lineHeight: 1.55, color: "var(--ink-700)", margin: "18px 0 26px", maxWidth: 540, textWrap: "pretty" }}>
               Good Local is a passport for the independent places worth the trip.
               Wander the river towns, earn a stamp at every stop, and become a regular

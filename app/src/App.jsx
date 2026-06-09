@@ -112,19 +112,23 @@ function Routes() {
   const path = window.location.pathname;
   const params = new URLSearchParams(window.location.search);
 
-  if (path.startsWith("/admin")) return <AdminRoute />;
+  // Match a route as an exact path or a `/segment/...` subpath — never an
+  // unanchored prefix, so `/app` can't be matched by `/apple`, etc.
+  const at = (seg) => path === seg || path.startsWith(seg + "/");
 
-  if (path.startsWith("/business/signup")) {
+  if (at("/admin")) return <AdminRoute />;
+
+  if (at("/business/signup")) {
     return <div style={{ height: "100dvh", margin: "0 auto" }}><Signup /></div>;
   }
-  if (path.startsWith("/business")) {
+  if (at("/business")) {
     if (params.get("signup") === "pending") {
       return <div style={{ height: "100dvh", margin: "0 auto" }}><PendingApproval /></div>;
     }
     return <div style={{ height: "100dvh", maxWidth: 1320, margin: "0 auto" }}><BusinessApp /></div>;
   }
 
-  if (path.startsWith("/app")) {
+  if (at("/app")) {
     return (
       <div style={{ height: "100dvh", maxWidth: 560, margin: "0 auto", background: "var(--paper-50)", boxShadow: "0 0 0 1px var(--ink-100)" }}>
         <PatronApp initialTab="home" />
@@ -134,10 +138,10 @@ function Routes() {
 
   if (path.startsWith("/blog/")) {
     const slug = decodeURIComponent(path.replace(/^\/blog\//, "").replace(/\/+$/, ""));
-    return <Blog slug={slug} />;
+    return slug ? <Blog slug={slug} /> : <Blog />;
   }
-  if (path.startsWith("/blog")) return <Blog />;
-  if (path.startsWith("/podcast")) return <Podcast />;
+  if (at("/blog")) return <Blog />;
+  if (at("/podcast")) return <Podcast />;
 
   // Root and anything else → the marketing landing.
   return <Landing />;

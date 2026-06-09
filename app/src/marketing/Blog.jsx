@@ -85,7 +85,10 @@ function Post({ slug }) {
         <div style={{ fontSize: 13, color: "var(--ink-500)", marginBottom: 10 }}>{fmtDate(post.published_at)} · {post.author}</div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 38, fontWeight: 600, lineHeight: 1.1, letterSpacing: "-0.018em", margin: "0 0 20px" }}>{post.title}</h1>
         {post.cover_image_url ? (
-          <img src={post.cover_image_url} alt="" style={{ width: "100%", borderRadius: 14, margin: "0 0 24px", display: "block" }} />
+          <img
+            src={post.cover_image_url} alt="" decoding="async"
+            style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 14, margin: "0 0 24px", display: "block" }}
+          />
         ) : null}
         <div
           className="gl-prose"
