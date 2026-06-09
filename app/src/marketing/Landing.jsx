@@ -45,9 +45,10 @@ export default function Landing() {
             <Eyebrow>A regional passport · Starting on the Upper Delaware</Eyebrow>
             <Display size={54}>The places worth coming back to.</Display>
             <p style={{ fontSize: 18, lineHeight: 1.55, color: "var(--ink-700)", margin: "18px 0 26px", maxWidth: 540, textWrap: "pretty" }}>
-              Good Local is a regional passport for the independent places you love.
-              Locals and weekenders earn a stamp every visit and unlock perks, free.
-              Owners get a modern loyalty program that runs the same day.
+              Good Local is a passport for the independent places worth the trip.
+              Wander the river towns, earn a stamp at every stop, and become a regular
+              where you belong. Free for locals and weekenders. Owners go live the same
+              day.
             </p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Button variant="primary" size="lg" as="a" href="/app" leadingIcon={<Icon name="wallet" size={20} />}>
@@ -72,6 +73,19 @@ export default function Landing() {
               style={{ "--pass-w": "300px", "--pass-h": "372px", boxSizing: "border-box" }}
             />
           </div>
+        </div>
+      </Section>
+
+      {/* ---------- Narrative band: travel + belonging ---------- */}
+      <Section style={{ paddingTop: 4, paddingBottom: 44 }}>
+        <div style={{ textAlign: "center", maxWidth: 740, margin: "0 auto" }}>
+          <p style={{
+            fontFamily: "var(--font-display)", fontSize: 27, fontWeight: 500, fontStyle: "italic",
+            lineHeight: 1.35, letterSpacing: "-0.01em", color: "var(--ink-1000)", margin: 0, textWrap: "balance",
+          }}>
+            Part adventure, part homecoming. Every stamp is a place you have been,
+            and a place that knows you now.
+          </p>
         </div>
       </Section>
 
