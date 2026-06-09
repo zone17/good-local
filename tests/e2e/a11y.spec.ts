@@ -59,7 +59,7 @@ test.describe("accessibility — AA, anonymous contexts (Art. IX)", () => {
 
   test("marketing landing has no serious/critical violations", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /one passport for the whole river/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /places worth coming back to/i })).toBeVisible({ timeout: 10_000 });
     await auditAA(page, "/ (landing)");
   });
 

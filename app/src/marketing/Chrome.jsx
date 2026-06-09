@@ -79,7 +79,7 @@ export function SiteFooter() {
             <span style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600 }}>Good Local</span>
           </div>
           <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--ink-500)", margin: 0 }}>
-            The Upper Delaware Passport. Run by river-town residents. We never sell
+            The Upper Delaware Passport. Run by river town residents. We never sell
             ranking and never share your visit history.
           </p>
         </div>

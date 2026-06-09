@@ -34,7 +34,7 @@ function List() {
           What&apos;s happening on the river
         </h1>
         <p style={{ fontSize: 16.5, color: "var(--ink-700)", lineHeight: 1.55, marginTop: 14 }}>
-          A short read every week — new spots, season milestones, and the people behind the counters.
+          A short read every week. New spots, season milestones, and the people behind the counters.
         </p>
       </section>
 
