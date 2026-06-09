@@ -144,7 +144,7 @@ export function getBusinessDetail({ businessSlug }) {
  * @returns {Promise<{ checkout_url: string, business_id: string }>}
  */
 export function createCheckoutSession({ businessName, ownerEmail, town, idempotencyKey }) {
-  return edge("create_checkout_session", {
+  return edge("create-checkout-session", {
     business_name: businessName,
     owner_email: ownerEmail,
     town,
