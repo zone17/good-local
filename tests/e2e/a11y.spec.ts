@@ -57,8 +57,14 @@ test.describe("accessibility — AA, anonymous contexts (Art. IX)", () => {
     await auditAA(page, "/c (check-in success)");
   });
 
-  test("patron passport home has no serious/critical violations", async ({ page }) => {
+  test("marketing landing has no serious/critical violations", async ({ page }) => {
     await page.goto("/");
+    await expect(page.getByRole("heading", { name: /one passport for the whole river/i })).toBeVisible({ timeout: 10_000 });
+    await auditAA(page, "/ (landing)");
+  });
+
+  test("patron passport home has no serious/critical violations", async ({ page }) => {
+    await page.goto("/app");
     // Either the loaded passport or its loading shell counts as rendered; the
     // axe scan runs on whatever anonymous state the app settles into.
     await expect(page.getByText(/Passport/i).first()).toBeVisible({ timeout: 10_000 });
