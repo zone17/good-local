@@ -1,11 +1,17 @@
 import React from "react";
-import PatronApp from "./patron/PatronApp.jsx";
-import BusinessApp from "./business/BusinessApp.jsx";
-import Signup, { PendingApproval } from "./business/Signup.jsx";
 import { supabase, getRole, signInOwner, signOut } from "./lib/auth.js";
 
-// AdminApp is dynamically imported so the admin bundle never weighs on the
-// main patron/owner entry (R7 / SC-008 — main ≤130KB gz).
+// Every route component is code-split so each surface only ships its own chunk
+// — the landing page (the most-hit entry) loads minimal JS, and the main entry
+// stays well under the SC-008 budget (R7).
+const Landing = React.lazy(() => import("./marketing/Landing.jsx"));
+const Blog = React.lazy(() => import("./marketing/Blog.jsx"));
+const Podcast = React.lazy(() => import("./marketing/Podcast.jsx"));
+const PatronApp = React.lazy(() => import("./patron/PatronApp.jsx"));
+const BusinessApp = React.lazy(() => import("./business/BusinessApp.jsx"));
+const Signup = React.lazy(() => import("./business/Signup.jsx"));
+const PendingApproval = React.lazy(() =>
+  import("./business/Signup.jsx").then((m) => ({ default: m.PendingApproval })));
 const AdminApp = React.lazy(() => import("./admin/AdminApp.jsx"));
 
 // /admin gate: render AdminApp only when the session role is admin; otherwise a
@@ -93,56 +99,54 @@ function AdminRoute() {
   );
 }
 
-// Minimal path routing — two surfaces, zero router dependency.
-//   /                  → patron mobile web (capped at 560px per design layout rules)
+// Minimal path routing — zero router dependency.
+//   /                  → marketing landing (the public front door)
+//   /app               → patron mobile web (capped at 560px per design layout rules)
+//   /blog, /blog/:slug → the weekly review
+//   /podcast           → episodes
 //   /business          → owner dashboard (sidebar + 1320px content lane)
 //   /business/signup   → owner self-serve onboarding (US1)
-//   /c/:code           → check-in entry (what the register QR encodes) — opens the
-//                        patron app on the check-in flow.
-export default function App() {
+//   /admin             → internal
+//   /c/:code           → check-in entry (separate lean bundle via vercel rewrite)
+function Routes() {
   const path = window.location.pathname;
   const params = new URLSearchParams(window.location.search);
 
-  if (path.startsWith("/admin")) {
-    return <AdminRoute />;
-  }
+  if (path.startsWith("/admin")) return <AdminRoute />;
 
   if (path.startsWith("/business/signup")) {
-    return (
-      <div style={{ height: "100dvh", margin: "0 auto" }}>
-        <Signup />
-      </div>
-    );
+    return <div style={{ height: "100dvh", margin: "0 auto" }}><Signup /></div>;
   }
-
   if (path.startsWith("/business")) {
-    // Post-checkout return: the calm pending-approval screen (FR-006).
     if (params.get("signup") === "pending") {
-      return (
-        <div style={{ height: "100dvh", margin: "0 auto" }}>
-          <PendingApproval />
-        </div>
-      );
+      return <div style={{ height: "100dvh", margin: "0 auto" }}><PendingApproval /></div>;
     }
+    return <div style={{ height: "100dvh", maxWidth: 1320, margin: "0 auto" }}><BusinessApp /></div>;
+  }
+
+  if (path.startsWith("/app")) {
     return (
-      <div style={{ height: "100dvh", maxWidth: 1320, margin: "0 auto" }}>
-        <BusinessApp />
+      <div style={{ height: "100dvh", maxWidth: 560, margin: "0 auto", background: "var(--paper-50)", boxShadow: "0 0 0 1px var(--ink-100)" }}>
+        <PatronApp initialTab="home" />
       </div>
     );
   }
 
-  const initialTab = path.startsWith("/c/") ? "checkin" : "home";
+  if (path.startsWith("/blog/")) {
+    const slug = decodeURIComponent(path.replace(/^\/blog\//, "").replace(/\/+$/, ""));
+    return <Blog slug={slug} />;
+  }
+  if (path.startsWith("/blog")) return <Blog />;
+  if (path.startsWith("/podcast")) return <Podcast />;
+
+  // Root and anything else → the marketing landing.
+  return <Landing />;
+}
+
+export default function App() {
   return (
-    <div
-      style={{
-        height: "100dvh",
-        maxWidth: 560,
-        margin: "0 auto",
-        background: "var(--paper-50)",
-        boxShadow: "0 0 0 1px var(--ink-100)",
-      }}
-    >
-      <PatronApp initialTab={initialTab} />
-    </div>
+    <React.Suspense fallback={<div style={{ minHeight: "100dvh", background: "var(--paper-50)" }} />}>
+      <Routes />
+    </React.Suspense>
   );
 }

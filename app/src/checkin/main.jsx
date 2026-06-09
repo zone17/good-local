@@ -295,7 +295,7 @@ function Success({ result, onClaim }) {
             {adding ? "Saving…" : "Add Passport to Apple Wallet"}
           </Button>
         )}
-        <Button variant="secondary" block as="a" href="/">
+        <Button variant="secondary" block as="a" href="/app">
           Open my passport
         </Button>
         {!added ? (
@@ -401,7 +401,7 @@ function ErrorScreen({ code }) {
           <div style={{ color: "var(--ink-700)", fontSize: 15, lineHeight: 1.5 }}>{copy.body}</div>
           {copy.passport ? (
             <div style={{ marginTop: 20 }}>
-              <Button variant="secondary" block as="a" href="/">
+              <Button variant="secondary" block as="a" href="/app">
                 Open my passport
               </Button>
             </div>
@@ -525,7 +525,7 @@ function ClaimSheet({ onClose }) {
             <div style={{ color: "var(--ink-700)", fontSize: 15, marginBottom: 20 }}>
               Your passport is saved. Your stamps will follow you to any phone.
             </div>
-            <Button variant="secondary" block as="a" href="/">
+            <Button variant="secondary" block as="a" href="/app">
               Open my passport
             </Button>
           </>

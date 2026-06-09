@@ -108,7 +108,7 @@ test("Discover render captures one steer_impression per visible business, linked
   });
 
   // Fresh context (new anon patron) → open the patron app, then Discover.
-  await page.goto("/");
+  await page.goto("/app");
   await page.getByRole("button", { name: /Discover/i }).click();
 
   // The discovery list renders (founding-pick eyebrow / cards). Wait for the
