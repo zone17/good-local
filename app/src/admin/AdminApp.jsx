@@ -15,7 +15,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Button, IconButton, Card, Badge, Tag, Icon,
-  Field, Input, Select, Divider, SealMark,
+  Field, Input, Textarea, Select, Divider, SealMark,
 } from "../ds.js";
 import { supabase } from "../lib/auth.js";
 import * as api from "../lib/api.js";
@@ -38,6 +38,7 @@ function Sidebar({ view, onChange, onSignOut }) {
     { id: "rotation",  label: "Rotation",  icon: "qr" },
     { id: "gates",     label: "Gates",     icon: "trending-up" },
     { id: "audit",     label: "Staff audit", icon: "users" },
+    { id: "content",   label: "Content",   icon: "edit" },
   ];
   return (
     <aside style={{
@@ -465,12 +466,156 @@ function StaffAudit() {
 
 // ---- Shell -------------------------------------------------
 
+// ---- Content authoring (blog + podcast CMS) ----------------
+// Admins write/publish from here; RLS lets is_admin() read drafts + write,
+// while the public site reads only published rows (migration 0016).
+
+const slugify = (s) =>
+  (s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
+
+function Content() {
+  const [kind, setKind] = useState("blog");
+  return (
+    <div style={{ maxWidth: 920 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        {[["blog", "Blog"], ["podcast", "Podcast"]].map(([id, label]) => (
+          <Button key={id} variant={kind === id ? "primary" : "secondary"} size="sm" onClick={() => setKind(id)}>{label}</Button>
+        ))}
+      </div>
+      {kind === "blog" ? <ContentEditor table="blog_posts" fields={BLOG_FIELDS} label="post" /> : null}
+      {kind === "podcast" ? <ContentEditor table="podcast_episodes" fields={PODCAST_FIELDS} label="episode" /> : null}
+    </div>
+  );
+}
+
+const BLOG_FIELDS = [
+  { key: "title", label: "Title", required: true },
+  { key: "slug", label: "Slug", hint: "Auto-filled from title; the URL is /blog/{slug}." },
+  { key: "author", label: "Author", default: "Good Local" },
+  { key: "excerpt", label: "Excerpt", area: true, hint: "One line shown in the list." },
+  { key: "cover_image_url", label: "Cover image URL", hint: "Optional." },
+  { key: "body", label: "Body (markdown)", area: true, big: true, hint: "**bold**, _italic_, # headings, [links](https://…)." },
+];
+const PODCAST_FIELDS = [
+  { key: "title", label: "Title", required: true },
+  { key: "slug", label: "Slug" },
+  { key: "episode_number", label: "Episode number", type: "number" },
+  { key: "guest", label: "Guest", hint: "e.g. Mira Eisen, The Heron" },
+  { key: "duration", label: "Duration", hint: "e.g. 34 min" },
+  { key: "description", label: "Description", area: true },
+  { key: "audio_embed_url", label: "Audio embed URL", hint: "Spotify/Apple/Transistor embed src — the player." },
+  { key: "apple_url", label: "Apple Podcasts URL" },
+  { key: "spotify_url", label: "Spotify URL" },
+];
+
+function ContentEditor({ table, fields, label }) {
+  const [rows, setRows] = useState(null);
+  const [draft, setDraft] = useState(null); // the row being edited (or new)
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+
+  async function load() {
+    const { data } = await supabase.from(table).select("*").order("created_at", { ascending: false });
+    setRows(data ?? []);
+  }
+  useEffect(() => { load(); }, []); // eslint-disable-line
+
+  function newRow() { setDraft({ status: "draft", author: "Good Local" }); setErr(null); }
+  function edit(r) { setDraft({ ...r }); setErr(null); }
+
+  async function save(publish) {
+    setBusy(true); setErr(null);
+    try {
+      const row = { ...draft };
+      if (!row.title?.trim()) throw new Error("Title is required.");
+      if (!row.slug?.trim()) row.slug = slugify(row.title);
+      if (row.episode_number != null && row.episode_number !== "") row.episode_number = parseInt(row.episode_number, 10);
+      else delete row.episode_number;
+      row.status = publish ? "published" : (row.status || "draft");
+      if (publish && !row.published_at) row.published_at = new Date().toISOString();
+      const { error } = await supabase.from(table).upsert(row, { onConflict: "slug" });
+      if (error) throw error;
+      setDraft(null);
+      await load();
+    } catch (e) { setErr(e.message || "Couldn't save."); }
+    finally { setBusy(false); }
+  }
+
+  async function remove(r) {
+    if (!window.confirm(`Delete this ${label}?`)) return;
+    await supabase.from(table).delete().eq("id", r.id);
+    await load();
+  }
+
+  if (draft) {
+    return (
+      <Card style={{ padding: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16 }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 600 }}>{draft.id ? `Edit ${label}` : `New ${label}`}</div>
+          <Badge variant={draft.status === "published" ? "solid-pine" : undefined}>{draft.status || "draft"}</Badge>
+        </div>
+        {err ? <div style={{ color: "var(--stamp-700)", fontSize: 13, marginBottom: 12 }}>{err}</div> : null}
+        <div style={{ display: "grid", gap: 14 }}>
+          {fields.map((f) => (
+            <Field key={f.key} label={f.label} hint={f.hint}>
+              {f.area ? (
+                <Textarea
+                  value={draft[f.key] ?? ""} onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
+                  style={f.big ? { minHeight: 220, fontFamily: "var(--font-mono)", fontSize: 13 } : undefined}
+                />
+              ) : (
+                <Input
+                  type={f.type || "text"} value={draft[f.key] ?? (f.default ?? "")}
+                  onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
+                  onBlur={f.key === "title" && !draft.slug ? () => setDraft((d) => ({ ...d, slug: slugify(d.title) })) : undefined}
+                />
+              )}
+            </Field>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+          <Button onClick={() => save(true)} disabled={busy}>{busy ? "Saving…" : "Publish"}</Button>
+          <Button variant="secondary" onClick={() => save(false)} disabled={busy}>Save draft</Button>
+          <Button variant="ghost" onClick={() => setDraft(null)}>Cancel</Button>
+          <div style={{ flex: 1 }} />
+          {draft.id ? <Button variant="ghost" onClick={() => remove(draft)} style={{ color: "var(--stamp-700)" }}>Delete</Button> : null}
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}><Button onClick={newRow} leadingIcon={<Icon name="edit" size={16} />}>New {label}</Button></div>
+      {rows === null ? (
+        <div style={{ color: "var(--ink-500)" }}>Loading…</div>
+      ) : rows.length === 0 ? (
+        <Card style={{ padding: 24, color: "var(--ink-700)" }}>No {label}s yet. Create your first one.</Card>
+      ) : (
+        <div style={{ display: "grid", gap: 10 }}>
+          {rows.map((r) => (
+            <Card key={r.id} style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{r.title}</div>
+                <div style={{ fontSize: 12.5, color: "var(--ink-500)" }}>/{table === "blog_posts" ? "blog" : "podcast"}/{r.slug}{r.guest ? ` · ${r.guest}` : ""}</div>
+              </div>
+              <Badge variant={r.status === "published" ? "solid-pine" : undefined}>{r.status}</Badge>
+              <Button variant="secondary" size="sm" onClick={() => edit(r)}>Edit</Button>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TITLES = {
   approvals: ["Approvals", "Onboarding queue"],
   picks: ["Founding picks", "Discovery curation"],
   rotation: ["Code rotation", "Trust & reprints"],
   gates: ["Gate dashboard", "Pre-registered experiment"],
   audit: ["Staff entry audit", "Anomaly review"],
+  content: ["Content", "Blog & podcast"],
 };
 
 export default function AdminApp({ onSignOut }) {
@@ -488,6 +633,7 @@ export default function AdminApp({ onSignOut }) {
           {view === "rotation" ? <Rotation /> : null}
           {view === "gates" ? <Gates /> : null}
           {view === "audit" ? <StaffAudit /> : null}
+          {view === "content" ? <Content /> : null}
         </div>
       </main>
     </div>
