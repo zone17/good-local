@@ -52,11 +52,20 @@ export function usePodcastEpisodes() {
 export function renderMarkdown(md) {
   if (!md) return "";
   const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // The URL is interpolated into an href attribute. esc() (run first on the whole
+  // string) already handled <,>,& — but NOT quotes. The link URL class therefore
+  // FORBIDS quotes/angle-brackets/whitespace/`)` so it can't break out of the
+  // attribute, and attrEnc() encodes any quote as belt-and-suspenders. Only the
+  // `http(s)://` scheme matches, so `javascript:` URLs are impossible.
+  const attrEnc = (s) => s.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   const inline = (s) =>
     esc(s)
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       .replace(/_(.+?)_/g, "<em>$1</em>")
-      .replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      .replace(
+        /\[([^\]]+?)\]\((https?:\/\/[^\s"'<>)]+)\)/g,
+        (_m, text, url) => `<a href="${attrEnc(url)}" target="_blank" rel="noopener noreferrer">${text}</a>`,
+      );
   return md
     .split(/\n{2,}/)
     .map((block) => {
