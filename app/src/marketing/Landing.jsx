@@ -1,9 +1,9 @@
 // ============================================================
 // Landing.jsx — the marketing front door at `/`.
-// Explains Good Local to first-time visitors and routes them:
-//   patrons → /app, business owners → /business/signup.
-// Built from the canonical design system (tokens + a few primitives).
-// The patron app itself now lives at /app (see App.jsx).
+// Good Local is the platform; the Upper Delaware is region one, with more
+// regions to follow. Copy synthesized from a copywriter panel (D-026); the
+// house style here uses no dashes of any kind.
+// Built from the canonical design system. The patron app lives at /app.
 // ============================================================
 import React from "react";
 import { Button, Icon, Card, SealMark, WalletPass, Badge } from "../ds.js";
@@ -42,23 +42,24 @@ export default function Landing() {
       <Section style={{ paddingTop: 56, paddingBottom: 48 }}>
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.1fr) minmax(0,0.9fr)", gap: 48, alignItems: "center" }} className="gl-hero">
           <div>
-            <Eyebrow>Upper Delaware · Season One</Eyebrow>
-            <Display size={52}>One passport for the whole river region.</Display>
-            <p style={{ fontSize: 18, lineHeight: 1.55, color: "var(--ink-700)", margin: "18px 0 26px", maxWidth: 520, textWrap: "pretty" }}>
-              Earn a stamp every time you visit a local spot. Collect perks at the
-              places you love, and fill in all twelve towns as you go. No app to
-              download — your passport lives in your phone&apos;s wallet.
+            <Eyebrow>A regional passport · Starting on the Upper Delaware</Eyebrow>
+            <Display size={54}>The places worth coming back to.</Display>
+            <p style={{ fontSize: 18, lineHeight: 1.55, color: "var(--ink-700)", margin: "18px 0 26px", maxWidth: 540, textWrap: "pretty" }}>
+              Good Local is a passport for the independent places worth the trip.
+              Wander the river towns, earn a stamp at every stop, and become a regular
+              where you belong. Free for locals and weekenders. Owners go live the same
+              day.
             </p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Button variant="primary" size="lg" as="a" href="/app" leadingIcon={<Icon name="wallet" size={20} />}>
-                Open your passport
+                Get your free passport
               </Button>
               <Button variant="secondary" size="lg" as="a" href="#business">
                 List your business
               </Button>
             </div>
             <div style={{ marginTop: 18, fontSize: 13, color: "var(--ink-500)" }}>
-              Free for patrons, always. $79/mo for businesses — founding rate locked.
+              Always free for patrons. $79 a month for businesses, founding rate locked.
             </div>
           </div>
           <div style={{ display: "grid", placeItems: "center" }}>
@@ -75,17 +76,30 @@ export default function Landing() {
         </div>
       </Section>
 
+      {/* ---------- Narrative band: travel + belonging ---------- */}
+      <Section style={{ paddingTop: 4, paddingBottom: 44 }}>
+        <div style={{ textAlign: "center", maxWidth: 740, margin: "0 auto" }}>
+          <p style={{
+            fontFamily: "var(--font-display)", fontSize: 27, fontWeight: 500, fontStyle: "italic",
+            lineHeight: 1.35, letterSpacing: "-0.01em", color: "var(--ink-1000)", margin: 0, textWrap: "balance",
+          }}>
+            Part adventure, part homecoming. Every stamp is a place you have been,
+            and a place that knows you now.
+          </p>
+        </div>
+      </Section>
+
       {/* ---------- How it works (patron) ---------- */}
       <Section id="how" style={{ paddingTop: 40, paddingBottom: 48 }}>
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <Eyebrow>How it works</Eyebrow>
-          <Display size={34}>Scan. Stamp. Come back.</Display>
+          <Display size={34}>A stamp for every visit.</Display>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 20 }} className="gl-3col">
           {[
-            { icon: "qr", title: "Scan at the register", body: "Point your camera at the kraft card by the counter. Your passport opens — no app, no account wall." },
-            { icon: "wallet", title: "Earn a stamp", body: "One stamp per visit, pressed into your wallet pass. Reach a shop's threshold and the perk is yours." },
-            { icon: "compass", title: "Fill the region", body: "Every new town you visit fills in your season passport — twelve towns up and down the Upper Delaware." },
+            { icon: "wallet", title: "Add it at the register", body: "Tap once and your passport lands in your phone wallet. No app to download, ever." },
+            { icon: "qr", title: "Earn a stamp", body: "Every visit adds a stamp and moves you toward the perk each place offers." },
+            { icon: "compass", title: "Fill in the region", body: "Town by town, you map the cafés, inns, and outfitters that locals actually return to." },
           ].map((s, i) => (
             <Card key={i} style={{ padding: 24 }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--pine-50)", color: "var(--pine-700)", display: "grid", placeItems: "center", marginBottom: 14 }}>
@@ -106,13 +120,13 @@ export default function Landing() {
             <path d="M0 88 Q 70 48 140 88 T 280 88 T 420 88 T 560 88" stroke="var(--pine-700)" fill="none" strokeWidth="1.8" />
           </svg>
           <div style={{ position: "relative", maxWidth: 640 }}>
-            <Eyebrow color="var(--stamp-700)">Discovery you can trust</Eyebrow>
-            <Display size={28}>Ranked by real regulars — never paid placement.</Display>
+            <Eyebrow color="var(--stamp-700)">Ranked by who comes back</Eyebrow>
+            <Display size={28}>Real return visits. Never paid placement.</Display>
             <p style={{ fontSize: 15.5, lineHeight: 1.6, color: "var(--ink-700)", marginTop: 14 }}>
-              When you discover a spot on Good Local, the only thing that lifts it is
-              how many people genuinely come back. No business can buy its way to the
-              top, no fabricated counts, no ratings to game. The counters are real or
-              they say so.
+              Discovery here runs on verified return visits, the honest measure of a
+              place people love. No business can buy its way to the top. No fabricated
+              counts, no ratings to game. The spots that rise are the ones neighbors
+              keep coming back to.
             </p>
           </div>
         </Card>
@@ -123,18 +137,19 @@ export default function Landing() {
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 44, alignItems: "center" }} className="gl-2col">
           <div>
             <Eyebrow color="var(--ochre-700)">For business owners</Eyebrow>
-            <Display size={34}>Your own rewards program, live the same day.</Display>
+            <Display size={34}>Your loyalty program, live today.</Display>
             <p style={{ fontSize: 16, lineHeight: 1.55, color: "var(--ink-700)", margin: "16px 0 20px" }}>
-              Set up a perk in two minutes, print your register kit, and start
-              rewarding regulars. A calm weekly dashboard — who came back, what&apos;s
-              working — and not one patron&apos;s history at any other shop. $79/mo,
-              founding rate locked for season one.
+              Good Local gives you a modern loyalty program you can launch this
+              afternoon. Stamps for every visit, perks you design and fund yourself,
+              and a calm dashboard showing exactly who comes back. It works on its own
+              from day one. As your neighbors join, the whole region becomes one front
+              door to your business.
             </p>
             <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px", display: "grid", gap: 10 }}>
               {[
-                "Works standalone — you don't need anyone else on the network",
-                "Stamps carry no cash value; you owe nothing until a patron earns a perk",
-                "Your numbers are yours — owners only ever see their own aggregates",
+                "Live the same day, at the $79 founding rate",
+                "Perks you own and control, never a shared currency",
+                "See your real regulars, not vanity numbers",
               ].map((t, i) => (
                 <li key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14.5, color: "var(--ink-1000)" }}>
                   <span style={{ color: "var(--pine-700)", marginTop: 1 }}><Icon name="check" size={18} /></span>
@@ -143,8 +158,8 @@ export default function Landing() {
               ))}
             </ul>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-              <Button variant="primary" size="lg" as="a" href="/business/signup">List your business · $79/mo</Button>
-              <a href="/business" style={{ fontSize: 14, fontWeight: 600, color: "var(--pine-700)" }}>Already a member? Sign in →</a>
+              <Button variant="primary" size="lg" as="a" href="/business/signup">List your business</Button>
+              <a href="/business" style={{ fontSize: 14, fontWeight: 600, color: "var(--pine-700)" }}>Already a member? Sign in</a>
             </div>
           </div>
           <Card style={{ padding: 28 }}>
@@ -153,14 +168,14 @@ export default function Landing() {
               <span style={{ fontSize: 15, color: "var(--ink-500)" }}>/ month</span>
               <Badge variant="pine" style={{ marginLeft: "auto" }}>Founding rate</Badge>
             </div>
-            <div style={{ fontSize: 13.5, color: "var(--ink-500)", marginBottom: 18 }}>Locked for season one · $49 winter tier Nov–Apr</div>
+            <div style={{ fontSize: 13.5, color: "var(--ink-500)", marginBottom: 18 }}>Locked for season one. Optional $49 winter tier, November to April.</div>
             <div style={{ borderTop: "1px solid var(--ink-100)", paddingTop: 16, display: "grid", gap: 12 }}>
               {[
-                ["Two-minute perk builder", "qr"],
-                ["Printable register kit + rotating QR", "qr"],
-                ["Calm weekly dashboard", "compass"],
-                ["Regional discovery placement", "compass"],
-              ].map(([t, ic], i) => (
+                "Two minute perk builder",
+                "Printable register kit with rotating QR",
+                "A calm weekly dashboard",
+                "Regional discovery placement",
+              ].map((t, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14.5 }}>
                   <span style={{ color: "var(--pine-700)" }}><Icon name="check" size={16} /></span>{t}
                 </div>
@@ -170,42 +185,65 @@ export default function Landing() {
         </div>
       </Section>
 
+      {/* ---------- Region one of many (the platform / movement) ---------- */}
+      <Section style={{ paddingTop: 16, paddingBottom: 52 }}>
+        <Card variant="pine" style={{ padding: "40px 32px", background: "var(--pine-1000)", color: "var(--paper-100)", position: "relative", overflow: "hidden" }}>
+          <svg viewBox="0 0 600 140" style={{ position: "absolute", right: -30, top: -10, width: 380, height: 140, opacity: 0.14, pointerEvents: "none" }} aria-hidden="true">
+            <path d="M0 80 Q 70 40 140 80 T 280 80 T 420 80 T 560 80" stroke="var(--paper-100)" fill="none" strokeWidth="2.5" />
+            <path d="M0 100 Q 70 60 140 100 T 280 100 T 420 100 T 560 100" stroke="var(--paper-100)" fill="none" strokeWidth="1.8" />
+          </svg>
+          <div style={{ position: "relative", maxWidth: 680 }}>
+            <Eyebrow color="var(--ochre-300)">The movement</Eyebrow>
+            <Display size={32} style={{ color: "var(--paper-100)" }}>Region one of many.</Display>
+            <p style={{ fontSize: 16, lineHeight: 1.6, color: "rgba(246,241,228,0.84)", marginTop: 14 }}>
+              Good Local begins on the Upper Delaware, across twelve river towns in
+              New York and Pennsylvania. This is the first region, not the last. The
+              movement grows one main street at a time, and your region could be next.
+            </p>
+            <div style={{ marginTop: 22 }}>
+              <Button as="a" href="/business/signup" style={{ background: "var(--paper-100)", color: "var(--pine-1000)", border: "none" }}>Bring Good Local to your region</Button>
+            </div>
+          </div>
+        </Card>
+      </Section>
+
       {/* ---------- Blog + Podcast teaser ---------- */}
-      <Section style={{ paddingTop: 24, paddingBottom: 56 }}>
+      <Section style={{ paddingTop: 8, paddingBottom: 56 }}>
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 20 }} className="gl-2col">
           <Card as="a" href="/blog" style={{ padding: 28, display: "block", textDecoration: "none", color: "inherit", cursor: "pointer" }}>
             <Eyebrow>The weekly review</Eyebrow>
-            <Display size={24}>What&apos;s happening on the river</Display>
+            <Display size={24}>What is happening on the river</Display>
             <p style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink-700)", margin: "12px 0 14px" }}>
-              A short read every week — new spots, season milestones, and the people
+              A short read every week. New spots, season milestones, and the people
               behind the counters.
             </p>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--pine-700)" }}>Read the blog →</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--pine-700)" }}>Read the blog</span>
           </Card>
           <Card as="a" href="/podcast" style={{ padding: 28, display: "block", textDecoration: "none", color: "inherit", cursor: "pointer" }}>
             <Eyebrow color="var(--ochre-700)">The podcast</Eyebrow>
             <Display size={24}>Local owners, in their own words</Display>
             <p style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink-700)", margin: "12px 0 14px" }}>
-              Every week we sit down with a business owner from the Upper Delaware —
-              why they opened, what keeps them going, what they&apos;re proud of.
+              Every week we sit down with a business owner from the region. Why they
+              opened, what keeps them going, what they are proud of.
             </p>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ochre-700)" }}>Listen →</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ochre-700)" }}>Listen</span>
           </Card>
         </div>
       </Section>
 
       {/* ---------- Closing CTA ---------- */}
       <Section style={{ paddingBottom: 64 }}>
-        <Card variant="pine" style={{ padding: "44px 32px", textAlign: "center", background: "var(--pine-1000)", color: "var(--paper-100)" }}>
-          <div style={{ display: "grid", placeItems: "center", marginBottom: 14, color: "var(--paper-100)" }}>
+        <Card style={{ padding: "44px 32px", textAlign: "center" }}>
+          <div style={{ display: "grid", placeItems: "center", marginBottom: 14, color: "var(--pine-700)" }}>
             <SealMark size={52} />
           </div>
-          <Display size={30} style={{ color: "var(--paper-100)" }}>Start your passport today.</Display>
-          <p style={{ fontSize: 15.5, color: "rgba(246,241,228,0.82)", margin: "12px auto 22px", maxWidth: 460, lineHeight: 1.55 }}>
-            Walk into any participating spot, scan the QR, and your first stamp lands.
+          <Display size={30}>Become a regular.</Display>
+          <p style={{ fontSize: 15.5, color: "var(--ink-700)", margin: "12px auto 22px", maxWidth: 480, lineHeight: 1.55 }}>
+            One passport. Twelve towns. Every good place, in your pocket. Walk into any
+            participating spot, scan the QR, and your first stamp lands.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <Button variant="wallet" size="lg" as="a" href="/app" leadingIcon={<Icon name="wallet" size={20} />}>Open your passport</Button>
+            <Button variant="primary" size="lg" as="a" href="/app" leadingIcon={<Icon name="wallet" size={20} />}>Get your free passport</Button>
           </div>
         </Card>
       </Section>
