@@ -11,7 +11,9 @@ import { SiteNav, SiteFooter } from "./Chrome.jsx";
 
 function Section({ children, style, id }) {
   return (
-    <section id={id} style={{ padding: "0 20px", ...style }}>
+    // scrollMarginTop keeps anchor-linked sections (#how, #business) clear of the
+    // sticky header when navigated to, so their headings are never clipped (D-027).
+    <section id={id} style={{ padding: "0 20px", scrollMarginTop: 84, ...style }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>{children}</div>
     </section>
   );
