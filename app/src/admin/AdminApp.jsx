@@ -482,8 +482,8 @@ function Content() {
           <Button key={id} variant={kind === id ? "primary" : "secondary"} size="sm" onClick={() => setKind(id)}>{label}</Button>
         ))}
       </div>
-      {kind === "blog" ? <ContentEditor table="blog_posts" fields={BLOG_FIELDS} label="post" /> : null}
-      {kind === "podcast" ? <ContentEditor table="podcast_episodes" fields={PODCAST_FIELDS} label="episode" /> : null}
+      {kind === "blog" ? <ContentEditor key="blog_posts" table="blog_posts" fields={BLOG_FIELDS} label="post" /> : null}
+      {kind === "podcast" ? <ContentEditor key="podcast_episodes" table="podcast_episodes" fields={PODCAST_FIELDS} label="episode" /> : null}
     </div>
   );
 }
@@ -529,11 +529,31 @@ function ContentEditor({ table, fields, label }) {
       const row = { ...draft };
       if (!row.title?.trim()) throw new Error("Title is required.");
       if (!row.slug?.trim()) row.slug = slugify(row.title);
-      if (row.episode_number != null && row.episode_number !== "") row.episode_number = parseInt(row.episode_number, 10);
-      else delete row.episode_number;
-      row.status = publish ? "published" : (row.status || "draft");
-      if (publish && !row.published_at) row.published_at = new Date().toISOString();
-      const { error } = await supabase.from(table).upsert(row, { onConflict: "slug" });
+      if (row.episode_number != null && row.episode_number !== "") {
+        const n = Number(row.episode_number);
+        if (!Number.isInteger(n)) throw new Error("Episode number must be a whole number.");
+        row.episode_number = n;
+      } else {
+        delete row.episode_number;
+      }
+      // Reject anything but http(s) in URL fields (defense-in-depth at the one
+      // authoring chokepoint; the public pages render these as href/src).
+      for (const k of ["cover_image_url", "audio_embed_url", "apple_url", "spotify_url"]) {
+        const v = row[k];
+        if (v && !/^https?:\/\//i.test(String(v).trim())) {
+          throw new Error(`${k.replace(/_/g, " ")} must start with http:// or https://`);
+        }
+      }
+      const wasPublished = row.status === "published";
+      row.status = publish ? "published" : "draft";
+      // Stamp published_at the moment a row first becomes published; clear it on
+      // unpublish so a later re-publish sorts by its true (re)publish date.
+      if (publish && !wasPublished) row.published_at = new Date().toISOString();
+      if (!publish) row.published_at = null;
+      // Upsert on the row's identity when editing (slug may have changed), else on
+      // slug for brand-new rows — so renaming a slug never inserts a duplicate.
+      const onConflict = row.id ? "id" : "slug";
+      const { error } = await supabase.from(table).upsert(row, { onConflict });
       if (error) throw error;
       setDraft(null);
       await load();

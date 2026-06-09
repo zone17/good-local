@@ -40,7 +40,10 @@ export function SiteNav() {
         </div>
 
         <button
-          aria-label="Menu" onClick={() => setOpen((v) => !v)}
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
+          aria-controls="gl-mobile-menu"
+          onClick={() => setOpen((v) => !v)}
           className="gl-nav-burger"
           style={{ marginLeft: "auto", display: "none", background: "none", border: 0, cursor: "pointer", color: "var(--ink-1000)" }}
         >
@@ -49,7 +52,7 @@ export function SiteNav() {
       </div>
 
       {open ? (
-        <div className="gl-nav-mobile" style={{ display: "none", padding: "8px 20px 16px", borderTop: "1px solid var(--ink-100)", flexDirection: "column", gap: 4 }}>
+        <div id="gl-mobile-menu" className="gl-nav-mobile" style={{ display: "none", padding: "8px 20px 16px", borderTop: "1px solid var(--ink-100)", flexDirection: "column", gap: 4 }}>
           {NAV_LINKS.map((l) => (
             <a key={l.href} href={l.href} onClick={() => setOpen(false)} style={{ padding: "10px 0", fontSize: 15, fontWeight: 500, color: "var(--ink-1000)", textDecoration: "none" }}>{l.label}</a>
           ))}

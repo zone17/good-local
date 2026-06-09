@@ -55,14 +55,15 @@ export default function Podcast() {
                   <iframe
                     src={e.audio_embed_url} title={e.title} loading="lazy"
                     style={{ width: "100%", height: 152, border: 0 }}
-                    allow="autoplay *; encrypted-media *; clipboard-write"
+                    allow="autoplay; encrypted-media"
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
                   />
                 </div>
               ) : null}
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {e.apple_url ? <Button variant="secondary" size="sm" as="a" href={e.apple_url} target="_blank" rel="noopener">Apple Podcasts</Button> : null}
-                {e.spotify_url ? <Button variant="secondary" size="sm" as="a" href={e.spotify_url} target="_blank" rel="noopener">Spotify</Button> : null}
+                {e.apple_url ? <Button variant="secondary" size="sm" as="a" href={e.apple_url} target="_blank" rel="noopener noreferrer">Apple Podcasts</Button> : null}
+                {e.spotify_url ? <Button variant="secondary" size="sm" as="a" href={e.spotify_url} target="_blank" rel="noopener noreferrer">Spotify</Button> : null}
               </div>
             </Card>
           ))

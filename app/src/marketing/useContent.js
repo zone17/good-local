@@ -9,12 +9,14 @@ import { supabase } from "../lib/auth.js";
 export function useBlogPosts() {
   const [posts, setPosts] = useState(null);
   useEffect(() => {
+    let active = true;
     supabase
       .from("blog_posts")
       .select("slug, title, excerpt, author, cover_image_url, published_at")
       .eq("status", "published")
       .order("published_at", { ascending: false })
-      .then(({ data }) => setPosts(data ?? []));
+      .then(({ data }) => { if (active) setPosts(data ?? []); });
+    return () => { active = false; };
   }, []);
   return posts;
 }
@@ -22,13 +24,15 @@ export function useBlogPosts() {
 export function useBlogPost(slug) {
   const [post, setPost] = useState(undefined); // undefined=loading, null=not found
   useEffect(() => {
+    let active = true;
     supabase
       .from("blog_posts")
       .select("slug, title, excerpt, body, author, cover_image_url, published_at")
       .eq("slug", slug)
       .eq("status", "published")
       .maybeSingle()
-      .then(({ data }) => setPost(data ?? null));
+      .then(({ data }) => { if (active) setPost(data ?? null); });
+    return () => { active = false; }; // ignore a stale response if slug changes
   }, [slug]);
   return post;
 }
@@ -36,12 +40,14 @@ export function useBlogPost(slug) {
 export function usePodcastEpisodes() {
   const [eps, setEps] = useState(null);
   useEffect(() => {
+    let active = true;
     supabase
       .from("podcast_episodes")
       .select("slug, episode_number, title, guest, description, audio_embed_url, apple_url, spotify_url, duration, published_at")
       .eq("status", "published")
       .order("published_at", { ascending: false })
-      .then(({ data }) => setEps(data ?? []));
+      .then(({ data }) => { if (active) setEps(data ?? []); });
+    return () => { active = false; };
   }, []);
   return eps;
 }
@@ -71,7 +77,9 @@ export function renderMarkdown(md) {
     .map((block) => {
       const b = block.trim();
       if (!b) return "";
-      const h = b.match(/^(#{1,3})\s+(.*)$/);
+      // Only a single-line block is a heading; otherwise `# Title\ntext` would
+      // drop everything after the first line (the `.` in the regex stops at \n).
+      const h = !b.includes("\n") && b.match(/^(#{1,3})\s+(.*)$/);
       if (h) {
         const lvl = h[1].length + 1; // # → h2
         return `<h${lvl}>${inline(h[2])}</h${lvl}>`;
