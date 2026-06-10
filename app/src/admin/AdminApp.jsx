@@ -39,6 +39,7 @@ function Sidebar({ view, onChange, onSignOut }) {
     { id: "gates",     label: "Gates",     icon: "trending-up" },
     { id: "audit",     label: "Staff audit", icon: "users" },
     { id: "content",   label: "Content",   icon: "edit" },
+    { id: "regions",   label: "Regions",   icon: "compass" },
   ];
   return (
     <aside style={{
@@ -466,6 +467,65 @@ function StaffAudit() {
 
 // ---- Shell -------------------------------------------------
 
+// ---- Region interest (lead capture from the landing) -------
+
+function Regions() {
+  const [rows, setRows] = useState(null);
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("region_interest")
+      .select("region, email, role, note, created_at")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => { if (active) setRows(data ?? []); });
+    return () => { active = false; };
+  }, []);
+
+  if (rows === null) return <div style={{ color: "var(--ink-500)" }}>Loading…</div>;
+  if (rows.length === 0) {
+    return <Card style={{ padding: 24, color: "var(--ink-700)" }}>No region requests yet. They land here when people ask for Good Local in their town.</Card>;
+  }
+
+  // Counts per region, so the strongest demand clusters are obvious.
+  const byRegion = {};
+  for (const r of rows) {
+    const k = r.region.trim().toLowerCase();
+    byRegion[k] = byRegion[k] || { label: r.region.trim(), n: 0 };
+    byRegion[k].n += 1;
+  }
+  const top = Object.values(byRegion).sort((a, b) => b.n - a.n).slice(0, 8);
+
+  return (
+    <div style={{ maxWidth: 920 }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
+        {top.map((t) => (
+          <Badge key={t.label} variant={t.n > 1 ? "solid-pine" : undefined}>{t.label} · {t.n}</Badge>
+        ))}
+      </div>
+      <Card style={{ padding: 0, overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+          <thead>
+            <tr style={{ textAlign: "left", background: "var(--paper-100)", color: "var(--ink-500)" }}>
+              <th style={{ padding: "10px 16px", fontWeight: 600 }}>Region</th>
+              <th style={{ padding: "10px 16px", fontWeight: 600 }}>Email</th>
+              <th style={{ padding: "10px 16px", fontWeight: 600 }}>When</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i} style={{ borderTop: "1px solid var(--ink-100)" }}>
+                <td style={{ padding: "10px 16px", fontWeight: 500 }}>{r.region}</td>
+                <td style={{ padding: "10px 16px" }}><a href={`mailto:${r.email}`} style={{ color: "var(--pine-700)" }}>{r.email}</a></td>
+                <td style={{ padding: "10px 16px", color: "var(--ink-500)" }}>{new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
 // ---- Content authoring (blog + podcast CMS) ----------------
 // Admins write/publish from here; RLS lets is_admin() read drafts + write,
 // while the public site reads only published rows (migration 0016).
@@ -636,6 +696,7 @@ const TITLES = {
   gates: ["Gate dashboard", "Pre-registered experiment"],
   audit: ["Staff entry audit", "Anomaly review"],
   content: ["Content", "Blog & podcast"],
+  regions: ["Region interest", "Demand from new towns"],
 };
 
 export default function AdminApp({ onSignOut }) {
@@ -654,6 +715,7 @@ export default function AdminApp({ onSignOut }) {
           {view === "gates" ? <Gates /> : null}
           {view === "audit" ? <StaffAudit /> : null}
           {view === "content" ? <Content /> : null}
+          {view === "regions" ? <Regions /> : null}
         </div>
       </main>
     </div>

@@ -8,6 +8,7 @@
 import React from "react";
 import { Button, Icon, Card, SealMark, WalletPass, Badge } from "../ds.js";
 import { SiteNav, SiteFooter } from "./Chrome.jsx";
+import RegionInterestForm from "./RegionInterestForm.jsx";
 
 function Section({ children, style, id }) {
   return (
@@ -202,8 +203,11 @@ export default function Landing() {
               New York and Pennsylvania. This is the first region, not the last. The
               movement grows one main street at a time, and your region could be next.
             </p>
-            <div style={{ marginTop: 22 }}>
-              <Button as="a" href="/business/signup" style={{ background: "var(--paper-100)", color: "var(--pine-1000)", border: "none" }}>Bring Good Local to your region</Button>
+            <div style={{ marginTop: 14, fontSize: 13.5, fontWeight: 600, color: "var(--ochre-300)", letterSpacing: "0.01em" }}>
+              Tell us where you want it next.
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <RegionInterestForm />
             </div>
           </div>
         </Card>
