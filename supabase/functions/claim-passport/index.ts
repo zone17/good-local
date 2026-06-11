@@ -114,25 +114,38 @@ Deno.serve(async (req: Request) => {
 
   if (twilioSid && twilioToken) {
     // Production-ish: send via the messaging provider (kept minimal — the
-    // contract only fixes the interface, not the carrier). Failures here are
-    // surfaced as RATE_LIMITED/VALIDATION rather than leaking the code.
+    // contract only fixes the interface, not the carrier). Provider failures
+    // surface as SMS_UNAVAILABLE with a generic message — never the upstream
+    // error text, never the code value.
     try {
       await sendViaTwilio(phone, code, { twilioSid, twilioToken });
-    } catch (err) {
-      return json({ error: { code: "VALIDATION", message: String(err) } }, 502);
+    } catch (_err) {
+      console.error(JSON.stringify({ fn: "claim-passport", event: "sms_send_failed", phone: maskPhone(phone) }));
+      return json({ error: { code: "SMS_UNAVAILABLE", message: "sms provider error" } }, 502);
     }
     return json({ sent: true }, 200);
   }
 
-  // No provider configured: log it. Expose dev_otp ONLY outside production so
-  // local/dev and tests can finish the claim without an SMS round-trip.
-  console.log(`[claim-passport] OTP for ${phone}: ${code} (no messaging provider configured)`);
-  const payload: Record<string, unknown> = { sent: true };
+  // No provider configured. Dev/local (fail-closed gate): return dev_otp so
+  // tests and local flows finish without an SMS round-trip.
   if (devOtpAllowed(environment, Deno.env.get("EXPOSE_DEV_OTP"))) {
-    payload.dev_otp = code; // dev/local only — never returned in production
+    console.log(`[claim-passport] dev OTP for ${phone}: ${code}`);
+    return json({ sent: true, dev_otp: code }, 200);
   }
-  return json(payload, 200);
+
+  // Production with no provider: fail honestly. Never claim an SMS was sent,
+  // and never write the live code or an unmasked phone number to the logs —
+  // an OTP in logs is a passport-takeover credential (audit ERR-009/COMP-004).
+  console.error(JSON.stringify({ fn: "claim-passport", event: "no_sms_provider", phone: maskPhone(phone) }));
+  return json({ error: { code: "SMS_UNAVAILABLE", message: "no messaging provider configured" } }, 503);
 });
+
+/** Mask an E.164 number for logs: keep the prefix and last two digits. */
+function maskPhone(phone: unknown): string {
+  const p = String(phone ?? "");
+  if (p.length < 5) return "***";
+  return `${p.slice(0, 2)}***${p.slice(-2)}`;
+}
 
 async function sendViaTwilio(
   phone: string,

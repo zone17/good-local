@@ -5,6 +5,7 @@
     "moduleResolution": "bundler",
     "lib": ["esnext", "dom"],
     "strict": true,
+    "allowJs": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,

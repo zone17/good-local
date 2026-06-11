@@ -36,6 +36,7 @@ export const ERROR_CODES = Object.freeze({
   VALIDATION: { httpish: 422, meaning: "a request field failed validation (details lists fields)" },
   UNAUTHENTICATED: { httpish: 401, meaning: "no/invalid session for required context" },
   FORBIDDEN: { httpish: 403, meaning: "authenticated but wrong context / out-of-RLS-scope" },
+  SMS_UNAVAILABLE: { httpish: 503, meaning: "no SMS provider configured/reachable; claiming by text unavailable" },
 });
 
 /**
@@ -85,6 +86,15 @@ export function toApiError(err) {
   // 2. Postgres / PostgREST error object.
   const e = /** @type {any} */ (err) || {};
   const message = e.message || e.msg || (typeof err === "string" ? err : "Request failed");
+
+  // RPCs raise `errcode P0001` with MESSAGE = the §7 code, which PostgREST
+  // surfaces as { code: "P0001", message: "STAFF_RATE_LIMITED" }. The code
+  // travels in the message — map it back so clients can branch on it
+  // (audit API-001: without this, every RPC error collapsed to VALIDATION).
+  const messageCode = typeof message === "string" ? message.trim() : "";
+  if (Object.prototype.hasOwnProperty.call(ERROR_CODES, messageCode)) {
+    return new ApiError(messageCode, message, e.details ?? null);
+  }
   const haystack = `${message} ${e.details || ""} ${e.constraint || ""} ${e.hint || ""}`.toLowerCase();
 
   // Unique violation on the per-day stamp constraint → DAILY_LIMIT (§1.3).

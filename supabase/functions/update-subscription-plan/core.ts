@@ -81,33 +81,37 @@ export async function changePlan(
       ? env.STRIPE_PRICE_WINTER ?? "price_winter_local"
       : env.STRIPE_PRICE_FOUNDING ?? sub.founding_price_id ?? "price_founding_local";
 
-  // Fetch current item id, then swap its price. (Two Stripe calls; both
-  // tolerant of the local no-network fallback below.)
+  // Fetch current item id, then swap its price. EVERY failure on this path is
+  // a hard STRIPE_ERROR: returning the optimistic projection while the swap
+  // was skipped told owners "you're on the $49 winter tier" while Stripe kept
+  // billing $79 (audit ERR-011). Success below means the swap happened.
   try {
     const itemsResp = await fetchImpl(
       `https://api.stripe.com/v1/subscription_items?subscription=${sub.stripe_subscription_id}`,
       { headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` } },
     );
-    if (itemsResp.ok) {
-      const items = (await itemsResp.json()) as { data?: Array<{ id: string }> };
-      const itemId = items.data?.[0]?.id;
-      if (itemId) {
-        const form = new URLSearchParams();
-        form.set("price", targetPrice);
-        form.set("proration_behavior", "none");
-        const swap = await fetchImpl(`https://api.stripe.com/v1/subscription_items/${itemId}`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: form.toString(),
-        });
-        if (!swap.ok) {
-          const detail = await swap.text().catch(() => "");
-          throw new PlanError("STRIPE_ERROR", detail.slice(0, 200));
-        }
-      }
+    if (!itemsResp.ok) {
+      throw new PlanError("STRIPE_ERROR", `subscription_items ${itemsResp.status}`);
+    }
+    const items = (await itemsResp.json()) as { data?: Array<{ id: string }> };
+    const itemId = items.data?.[0]?.id;
+    if (!itemId) {
+      throw new PlanError("STRIPE_ERROR", "subscription has no items");
+    }
+    const form = new URLSearchParams();
+    form.set("price", targetPrice);
+    form.set("proration_behavior", "none");
+    const swap = await fetchImpl(`https://api.stripe.com/v1/subscription_items/${itemId}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: form.toString(),
+    });
+    if (!swap.ok) {
+      const detail = await swap.text().catch(() => "");
+      throw new PlanError("STRIPE_ERROR", detail.slice(0, 200));
     }
   } catch (err) {
     if (err instanceof PlanError) throw err;

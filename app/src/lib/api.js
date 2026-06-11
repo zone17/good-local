@@ -37,7 +37,18 @@ async function rpc(name, args) {
  */
 async function edge(name, body) {
   const { data, error } = await supabase.functions.invoke(name, { body });
-  if (error) throw toApiError(error);
+  if (error) {
+    // Non-2xx responses arrive as FunctionsHttpError with the raw Response on
+    // `context` — the §1.2 envelope lives in its body, not on the error object
+    // (audit API-001: without parsing it, every edge error collapsed to
+    // VALIDATION and the per-code UI copy never fired).
+    const res = /** @type {any} */ (error).context;
+    if (res && typeof res.json === "function") {
+      const payload = await res.json().catch(() => null);
+      if (payload && typeof payload === "object" && payload.error) throw toApiError(payload);
+    }
+    throw toApiError(error);
+  }
   if (data && typeof data === "object" && data.error) throw toApiError(data);
   return data;
 }
@@ -283,7 +294,10 @@ export function getDashboard() {
  * @returns {Promise<{ sent: boolean, week_of: string }>}
  */
 export function shareWeeklyNote({ email }) {
-  return rpc("share_weekly_note", { p_email: email });
+  // The edge function is the carrier: it authenticates the owner, DELIVERS the
+  // email (Resend), and records the share row via the RPC. Calling the RPC
+  // directly only recorded intent while the UI said "Sent." (audit ERR-012).
+  return edge("share-weekly-note", { email });
 }
 
 /**

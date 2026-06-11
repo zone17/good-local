@@ -71,29 +71,38 @@ export default function StaffCheckIn({ businessId }) {
           Stamp a regular
         </div>
         <div style={{ color: "var(--ink-500)", fontSize: 14, marginTop: 4 }}>
-          No phone to scan? Enter their number and we'll send a one-time link to
-          keep their stamps.
+          No phone to scan? Enter their number and the stamp is saved to it.
+          They can claim their passport with that number at goodlocal.app.
         </div>
       </div>
 
-      <Field label="Guest phone number" hint="We send a one-time link so they keep their passport.">
-        <Input
-          type="tel"
-          inputMode="tel"
-          placeholder="+1 845 555 0142"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-        />
-      </Field>
-
-      <Button
-        variant="primary"
-        block
-        disabled={busy || normalizePhone(phone).length < 8}
-        onClick={submit}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!busy && normalizePhone(phone).length >= 8) submit();
+        }}
+        style={{ display: "flex", flexDirection: "column", gap: 16 }}
       >
-        {busy ? "Stamping…" : "Stamp this visit"}
-      </Button>
+        <Field label="Guest phone number" hint="Their stamps stay with this number until they claim their passport.">
+          <Input
+            type="tel"
+            inputMode="tel"
+            autoComplete="off"
+            placeholder="+1 845 555 0142"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </Field>
+
+        <Button
+          type="submit"
+          variant="primary"
+          block
+          disabled={busy || normalizePhone(phone).length < 8}
+        >
+          {busy ? "Stamping…" : "Stamp this visit"}
+        </Button>
+      </form>
 
       {errorCode ? (
         <Notice tone="stamp" title="Couldn't stamp that">
@@ -115,8 +124,9 @@ export default function StaffCheckIn({ businessId }) {
             />
           ) : null}
           {result.claim_link_sent ? (
-            <Notice tone="river" title="Claim link sent">
-              We texted them a one-time link to keep their passport.
+            <Notice tone="river" title="Saved to their number">
+              Their stamps stay with that number. They can claim their passport
+              any time at goodlocal.app.
             </Notice>
           ) : null}
         </div>

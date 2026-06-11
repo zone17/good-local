@@ -615,6 +615,7 @@ design voice rules; clients map `code` → copy. ("Copy pointer" names the desig
 | `VALIDATION` | 422 | a request field failed validation (`details` lists fields) | inline field copy |
 | `UNAUTHENTICATED` | 401 | no/invalid session for required context | sign-in / re-scan |
 | `FORBIDDEN` | 403 | authenticated but wrong context / out-of-RLS-scope | generic forbidden |
+| `SMS_UNAVAILABLE` | 503 | no SMS provider configured (503) or provider send failed (502); the OTP send path never reports `sent: true` unless a message was actually dispatched (or the dev affordance is active) | claim: texting-unavailable |
 
 ---
 

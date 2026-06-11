@@ -1,18 +1,20 @@
 import React from "react";
+import { ErrorBoundary, lazyRetry } from "./lib/recover.jsx";
 
 // Every route component is code-split so each surface only ships its own chunk
 // — the landing page (the most-hit entry) loads minimal JS, and the main entry
 // stays well under the SC-008 budget (R7). The Supabase client lives only inside
 // these lazy chunks (via AdminRoute / the app surfaces), never in the main entry.
-const Landing = React.lazy(() => import("./marketing/Landing.jsx"));
-const Blog = React.lazy(() => import("./marketing/Blog.jsx"));
-const Podcast = React.lazy(() => import("./marketing/Podcast.jsx"));
-const PatronApp = React.lazy(() => import("./patron/PatronApp.jsx"));
-const BusinessApp = React.lazy(() => import("./business/BusinessApp.jsx"));
-const Signup = React.lazy(() => import("./business/Signup.jsx"));
-const PendingApproval = React.lazy(() =>
+// lazyRetry survives the stale-deploy hashed-chunk 404 (spec 002 FR-013).
+const Landing = lazyRetry(() => import("./marketing/Landing.jsx"));
+const Blog = lazyRetry(() => import("./marketing/Blog.jsx"));
+const Podcast = lazyRetry(() => import("./marketing/Podcast.jsx"));
+const PatronApp = lazyRetry(() => import("./patron/PatronApp.jsx"));
+const BusinessApp = lazyRetry(() => import("./business/BusinessApp.jsx"));
+const Signup = lazyRetry(() => import("./business/Signup.jsx"));
+const PendingApproval = lazyRetry(() =>
   import("./business/Signup.jsx").then((m) => ({ default: m.PendingApproval })));
-const AdminRoute = React.lazy(() => import("./admin/AdminRoute.jsx"));
+const AdminRoute = lazyRetry(() => import("./admin/AdminRoute.jsx"));
 
 // Minimal path routing — zero router dependency.
 //   /                  → marketing landing (the public front door)
@@ -64,8 +66,10 @@ function Routes() {
 
 export default function App() {
   return (
-    <React.Suspense fallback={<div style={{ minHeight: "100dvh", background: "var(--paper-50)" }} />}>
-      <Routes />
-    </React.Suspense>
+    <ErrorBoundary>
+      <React.Suspense fallback={<div style={{ minHeight: "100dvh", background: "var(--paper-50)" }} />}>
+        <Routes />
+      </React.Suspense>
+    </ErrorBoundary>
   );
 }

@@ -75,10 +75,6 @@ export default function RegisterKit({ business }) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <Button variant="secondary" leadingIcon={<Icon name="share" size={18}/>}
-            onClick={() => window.alert("We'll mail a printed kraft card to your business address. (Coming soon.)")}>
-            Mail me a printed copy
-          </Button>
           <Button onClick={() => window.print()}>Print card</Button>
         </div>
       </div>
@@ -127,7 +123,7 @@ export default function RegisterKit({ business }) {
                 Earn your first stamp.
               </div>
               <div style={{ fontSize: 12, color: "var(--ink-700)", marginTop: 6, lineHeight: 1.4 }}>
-                {kit?.instructions ?? "Hold your camera over the code. No app needed — adds to your wallet."}
+                {kit?.instructions ?? "Hold your camera over the code. No app needed. Every visit earns a stamp."}
               </div>
               <div style={{ marginTop: 10, color: "var(--pine-700)", display: "grid", placeItems: "center" }}>
                 <SealMark size={36}/>

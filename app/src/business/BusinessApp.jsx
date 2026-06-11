@@ -394,7 +394,7 @@ function VisitChart({ series }) {
 // ---- Perks view + builder -----------------------------------
 
 function PerksView({ onNewPerk, openBuilder, onCloseBuilder, business, onChanged }) {
-  const perks = business?.perks ?? PERKS;
+  const perks = business?.perks ?? [];
   const [busyId, setBusyId] = useState(null);
 
   async function toggleActive(perk) {
@@ -728,7 +728,7 @@ function inWinterWindow(now = new Date()) {
 }
 
 function SettingsView({ business, onChanged }) {
-  const b = business ?? { ...BUSINESS, id: null };
+  const b = business ?? { id: null };
   const [name, setName] = useState(b.name ?? "");
   const [code, setCode] = useState(b.code ?? "");
   const [ownerNote, setOwnerNote] = useState(b.ownerNote ?? "");
@@ -814,17 +814,8 @@ function SettingsView({ business, onChanged }) {
         </div>
       </Card>
 
-      <Card>
-        <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>Privacy</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <Row title="Show repeat-visit counts on your dashboard" sub="Aggregate, not individual history."
-               trailing={<Switch checked={true} onChange={()=>{}} label="Toggle"/>}/>
-          <Row title="Appear in regional discovery" sub="Verified-regulars ranking + town map."
-               trailing={<Switch checked={true} onChange={()=>{}} label="Toggle"/>}/>
-          <Row title="Share weekly note with your co-owner" sub="dan@theheron.co"
-               trailing={<Switch checked={false} onChange={()=>{}} label="Toggle"/>}/>
-        </div>
-      </Card>
+      {/* Privacy controls return when they are real settings backed by real
+          columns — decorative toggles misrepresent practice (audit UX-027). */}
     </div>
   );
 }
