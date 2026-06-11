@@ -3,7 +3,7 @@
 // (Landing, Blog, Podcast). The app/business/admin surfaces keep their
 // own chrome; this is only the public marketing shell.
 // ============================================================
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button, Icon, SealMark } from "../ds.js";
 
 const NAV_LINKS = [
@@ -15,6 +15,24 @@ const NAV_LINKS = [
 
 export function SiteNav() {
   const [open, setOpen] = useState(false);
+  const burgerRef = useRef(null);
+  const close = useCallback(() => { setOpen(false); burgerRef.current?.focus(); }, []);
+
+  // While the mobile menu is open: Escape closes it (and returns focus to the
+  // burger), and growing past the mobile breakpoint closes it so it can't be
+  // left stranded behind the restored desktop nav.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") close(); };
+    const onResize = () => { if (window.innerWidth > 760) setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open, close]);
+
   return (
     <header style={{
       position: "sticky", top: 0, zIndex: 20,
@@ -40,6 +58,7 @@ export function SiteNav() {
         </div>
 
         <button
+          ref={burgerRef}
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
           aria-controls="gl-mobile-menu"
@@ -66,6 +85,11 @@ export function SiteNav() {
           .gl-nav-links, .gl-nav-cta { display: none !important; }
           .gl-nav-burger { display: grid !important; place-items: center; }
           .gl-nav-mobile { display: flex !important; }
+        }
+        /* Visible keyboard focus for marketing links + the burger (the DS only
+           styles .gl-btn / inputs; bare anchors had no focus indicator). */
+        .gl-marketing a:focus-visible, .gl-nav-burger:focus-visible {
+          outline: 2px solid var(--pine-700); outline-offset: 3px; border-radius: 6px;
         }
       `}</style>
     </header>

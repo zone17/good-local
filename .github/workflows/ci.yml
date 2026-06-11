@@ -46,7 +46,11 @@ jobs:
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned: CLI v2.106.0 (2026-06-11) changed service_role grant behavior
+          # and broke the local stack (contract tests hit "permission denied for
+          # table seasons/patrons"). 2.105.0 is the last known-good — re-evaluate
+          # before bumping. See D-031.
+          version: 2.105.0
       - name: Start Supabase local stack
         run: supabase start
       - name: Export stack keys
@@ -126,7 +130,11 @@ jobs:
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned: CLI v2.106.0 (2026-06-11) changed service_role grant behavior
+          # and broke the local stack (contract tests hit "permission denied for
+          # table seasons/patrons"). 2.105.0 is the last known-good — re-evaluate
+          # before bumping. See D-031.
+          version: 2.105.0
       - name: Start Supabase local stack
         run: supabase start
       - name: Apply migrations + seed

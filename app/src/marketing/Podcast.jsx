@@ -12,9 +12,9 @@ const fmtDate = (iso) =>
   iso ? new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
 
 export default function Podcast() {
-  const eps = usePodcastEpisodes();
+  const { episodes: eps, error } = usePodcastEpisodes();
   return (
-    <div style={{ background: "var(--paper-50)", color: "var(--ink-1000)", minHeight: "100dvh", fontFamily: "var(--font-body)" }}>
+    <div className="gl-marketing" style={{ background: "var(--paper-50)", color: "var(--ink-1000)", minHeight: "100dvh", fontFamily: "var(--font-body)" }}>
       <SiteNav />
 
       <section style={{ maxWidth: 820, margin: "0 auto", padding: "56px 20px 8px" }}>
@@ -31,6 +31,11 @@ export default function Podcast() {
       <section style={{ maxWidth: 820, margin: "0 auto", padding: "28px 20px 64px", display: "grid", gap: 18 }}>
         {eps === null ? (
           <div style={{ color: "var(--ink-500)", padding: "24px 0" }}>Loading…</div>
+        ) : error ? (
+          <Card style={{ padding: 28 }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 600 }}>We couldn&apos;t load the podcast.</div>
+            <p style={{ color: "var(--ink-700)", fontSize: 14.5, margin: "8px 0 0" }}>Please refresh to try again.</p>
+          </Card>
         ) : eps.length === 0 ? (
           <Card style={{ padding: 32, textAlign: "center" }}>
             <div style={{ color: "var(--ochre-700)", display: "grid", placeItems: "center", marginBottom: 12 }}><SealMark size={44} /></div>

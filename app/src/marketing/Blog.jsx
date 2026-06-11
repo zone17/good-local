@@ -12,7 +12,7 @@ const fmtDate = (iso) =>
 
 function Shell({ children }) {
   return (
-    <div style={{ background: "var(--paper-50)", color: "var(--ink-1000)", minHeight: "100dvh", fontFamily: "var(--font-body)" }}>
+    <div className="gl-marketing" style={{ background: "var(--paper-50)", color: "var(--ink-1000)", minHeight: "100dvh", fontFamily: "var(--font-body)" }}>
       <SiteNav />
       {children}
       <SiteFooter />
@@ -25,7 +25,7 @@ export default function Blog({ slug }) {
 }
 
 function List() {
-  const posts = useBlogPosts();
+  const { posts, error } = useBlogPosts();
   return (
     <Shell>
       <section style={{ maxWidth: 760, margin: "0 auto", padding: "56px 20px 12px" }}>
@@ -41,10 +41,15 @@ function List() {
       <section style={{ maxWidth: 760, margin: "0 auto", padding: "24px 20px 64px", display: "grid", gap: 16 }}>
         {posts === null ? (
           <div style={{ color: "var(--ink-500)", padding: "24px 0" }}>Loading…</div>
+        ) : error ? (
+          <Card style={{ padding: 28 }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 600 }}>We couldn&apos;t load the blog.</div>
+            <p style={{ color: "var(--ink-700)", fontSize: 14.5, margin: "8px 0 0" }}>Please refresh to try again.</p>
+          </Card>
         ) : posts.length === 0 ? (
           <Card style={{ padding: 28 }}>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 600 }}>First post coming soon.</div>
-            <p style={{ color: "var(--ink-700)", fontSize: 14.5, margin: "8px 0 0" }}>Check back this week — we&apos;re just getting started.</p>
+            <p style={{ color: "var(--ink-700)", fontSize: 14.5, margin: "8px 0 0" }}>Check back this week. We&apos;re just getting started.</p>
           </Card>
         ) : (
           posts.map((p) => (
@@ -62,7 +67,17 @@ function List() {
 }
 
 function Post({ slug }) {
-  const post = useBlogPost(slug);
+  const { post, error } = useBlogPost(slug);
+  if (error) {
+    return (
+      <Shell>
+        <div style={{ maxWidth: 720, margin: "0 auto", padding: "72px 20px", textAlign: "center" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600 }}>We couldn&apos;t load this post.</div>
+          <div style={{ marginTop: 16 }}><Button variant="secondary" as="a" href="/blog">Back to the blog</Button></div>
+        </div>
+      </Shell>
+    );
+  }
   if (post === undefined) {
     return <Shell><div style={{ maxWidth: 720, margin: "0 auto", padding: "56px 20px", color: "var(--ink-500)" }}>Loading…</div></Shell>;
   }
