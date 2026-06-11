@@ -14,7 +14,19 @@ blog + podcast + admin-authoring surface (PRs #12–#15). Findings below.
 - **P2 perf** — content hooks got `active`-flag cleanup (no setState-after-unmount, no stale-slug race). `useContent.js`
 - Verified NOT a problem: `ink-500` (#6E665A) on paper-50 ≈ 5.3:1 → passes AA. RLS write-gate (`is_admin()` only, anon cannot read drafts) is sound. Markdown renderer is XSS-safe (escape-first + http(s)-only links).
 
-## Deferred (do next)
+## Deferred — ALL RESOLVED
+
+- ✅ **P1 Supabase-in-main-entry** → PR #17 (D-028), main entry 101→46.7 KB gz.
+- ✅ **P2 content fetch error state** → hooks now return `{ ..., error }`; Blog/Podcast render a "couldn't load" state distinct from empty.
+- ✅ **P2 mobile menu focus mgmt** → Escape closes + returns focus to the burger; closes on resize past 760px; e2e in `landing-nav.spec.ts`.
+- ✅ **P3 font preconnect/display** → `display=swap` confirmed; added preconnect + a parse-time stylesheet `<link>` in index.html.
+- ✅ **P3 DS barrel tree-shaking** → verified clean: the Landing chunk (4.7 KB gz) contains no Tabs/Input/StampGrid. No `sideEffects` change needed.
+- ✅ **P3 misc** → markdown `_italic_` no longer matches inside `snake_case`; hero WalletPass capped at `min(300px, 82vw)` (no narrow-viewport overflow); `:focus-visible` outline added for marketing links + the burger.
+- ↪ Note left open intentionally: markdown link URLs containing a literal `)` are still truncated (rare for our content; documented limitation).
+
+---
+
+<details><summary>Original deferred list (for the record)</summary>
 
 ### P1 perf — Supabase client ships in the main entry
 `App.jsx` statically imports `lib/auth.js` → `@supabase/supabase-js` (~40–50KB gz)
@@ -51,3 +63,5 @@ via the `ds.js` barrel. If it does, import primitives directly or mark
 - `markdown` `_italic_` is greedy across `snake_case` words; consider word-boundary anchors or switch to `*italic*`. URLs with literal `)` are truncated.
 - Narrow viewport (~320px): hero `WalletPass` is a fixed 300px; cap with `max-width: 100%`.
 - Add explicit `:focus-visible` styling audit across nav/card links.
+
+</details>

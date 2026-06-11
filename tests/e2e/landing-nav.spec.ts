@@ -39,3 +39,22 @@ test.describe("landing anchor nav clears the sticky header", () => {
     });
   }
 });
+
+test.describe("landing mobile menu (a11y)", () => {
+  test.use({ viewport: { width: 420, height: 800 } });
+
+  test("burger opens the menu, Escape closes it and returns focus", async ({ page }) => {
+    await page.goto("/");
+    const menu = page.locator("#gl-mobile-menu");
+    await expect(menu).toHaveCount(0);
+
+    await page.getByRole("button", { name: /open menu/i }).click();
+    await expect(menu).toBeVisible();
+    expect(await page.getByRole("button", { name: /close menu/i }).getAttribute("aria-expanded")).toBe("true");
+
+    await page.keyboard.press("Escape");
+    await expect(menu).toHaveCount(0);
+    const focusLabel = await page.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? "");
+    expect(focusLabel).toMatch(/menu/i); // focus returned to the burger
+  });
+});

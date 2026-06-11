@@ -6,8 +6,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/auth.js";
 
+// Each hook returns { ...payload, error } so the UI can tell a genuine empty
+// list (show "coming soon") apart from a failed fetch (show "couldn't load").
 export function useBlogPosts() {
-  const [posts, setPosts] = useState(null);
+  const [state, setState] = useState({ posts: null, error: false });
   useEffect(() => {
     let active = true;
     supabase
@@ -15,30 +17,40 @@ export function useBlogPosts() {
       .select("slug, title, excerpt, author, cover_image_url, published_at")
       .eq("status", "published")
       .order("published_at", { ascending: false })
-      .then(({ data }) => { if (active) setPosts(data ?? []); });
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) console.warn("useBlogPosts:", error.message);
+        setState({ posts: error ? [] : (data ?? []), error: !!error });
+      });
     return () => { active = false; };
   }, []);
-  return posts;
+  return state;
 }
 
 export function useBlogPost(slug) {
-  const [post, setPost] = useState(undefined); // undefined=loading, null=not found
+  // post: undefined=loading, null=not found, object=found. error=fetch failed.
+  const [state, setState] = useState({ post: undefined, error: false });
   useEffect(() => {
     let active = true;
+    setState({ post: undefined, error: false });
     supabase
       .from("blog_posts")
       .select("slug, title, excerpt, body, author, cover_image_url, published_at")
       .eq("slug", slug)
       .eq("status", "published")
       .maybeSingle()
-      .then(({ data }) => { if (active) setPost(data ?? null); });
-    return () => { active = false; }; // ignore a stale response if slug changes
+      .then(({ data, error }) => {
+        if (!active) return; // ignore a stale response if slug changes
+        if (error) console.warn("useBlogPost:", error.message);
+        setState({ post: error ? undefined : (data ?? null), error: !!error });
+      });
+    return () => { active = false; };
   }, [slug]);
-  return post;
+  return state;
 }
 
 export function usePodcastEpisodes() {
-  const [eps, setEps] = useState(null);
+  const [state, setState] = useState({ episodes: null, error: false });
   useEffect(() => {
     let active = true;
     supabase
@@ -46,10 +58,14 @@ export function usePodcastEpisodes() {
       .select("slug, episode_number, title, guest, description, audio_embed_url, apple_url, spotify_url, duration, published_at")
       .eq("status", "published")
       .order("published_at", { ascending: false })
-      .then(({ data }) => { if (active) setEps(data ?? []); });
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) console.warn("usePodcastEpisodes:", error.message);
+        setState({ episodes: error ? [] : (data ?? []), error: !!error });
+      });
     return () => { active = false; };
   }, []);
-  return eps;
+  return state;
 }
 
 // Tiny dependency-free markdown → HTML for post bodies (paragraphs, **bold**,
@@ -67,7 +83,9 @@ export function renderMarkdown(md) {
   const inline = (s) =>
     esc(s)
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/_(.+?)_/g, "<em>$1</em>")
+      // Only underscores not adjacent to alphanumerics are emphasis, so
+      // snake_case words and identifiers are left intact.
+      .replace(/(^|[^A-Za-z0-9])_(?=\S)([^_\n]+?)_(?![A-Za-z0-9])/g, "$1<em>$2</em>")
       .replace(
         /\[([^\]]+?)\]\((https?:\/\/[^\s"'<>)]+)\)/g,
         (_m, text, url) => `<a href="${attrEnc(url)}" target="_blank" rel="noopener noreferrer">${text}</a>`,

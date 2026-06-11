@@ -3,11 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Good Local — Upper Delaware Passport</title>
-  <meta name="description" content="Earn a stamp every visit at the independent businesses of the Upper Delaware. No app download — your passport lives in your wallet.">
+  <title>Good Local · The Upper Delaware Passport</title>
+  <meta name="description" content="A regional passport for the independent places you love. Earn a stamp every visit, unlock perks, and discover where locals keep going back. No app to download.">
   <meta name="theme-color" content="#1d4231">
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="apple-touch-icon" href="/icon.svg">
+  <!-- Preconnect + load the webfont CSS from the HTML so the request starts at
+       parse time, not after the app's CSS @import resolves (LCP win). -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..800;1,6..72,300..800&family=Public+Sans:ital,wght@0,200..900;1,200..900&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap">
   <style>
     /* Screen-entrance keyframes live in the document head — defined inside the
        rendered React tree they don't exist at first paint and the screen sits

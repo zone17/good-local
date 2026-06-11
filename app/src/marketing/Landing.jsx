@@ -38,7 +38,7 @@ const Eyebrow = ({ children, color = "var(--pine-700)" }) => (
 
 export default function Landing() {
   return (
-    <div style={{ background: "var(--paper-50)", color: "var(--ink-1000)", minHeight: "100dvh", fontFamily: "var(--font-body)" }}>
+    <div className="gl-marketing" style={{ background: "var(--paper-50)", color: "var(--ink-1000)", minHeight: "100dvh", fontFamily: "var(--font-body)" }}>
       <SiteNav />
 
       {/* ---------- Hero ---------- */}
@@ -73,7 +73,7 @@ export default function Landing() {
               perkLabel="The Regular's Pour"
               perkSub="One more visit, on the house"
               stampCode="HRN"
-              style={{ "--pass-w": "300px", "--pass-h": "372px", boxSizing: "border-box" }}
+              style={{ "--pass-w": "min(300px, 82vw)", "--pass-h": "calc(min(300px, 82vw) * 1.24)", boxSizing: "border-box" }}
             />
           </div>
         </div>
