@@ -10,7 +10,7 @@
 import { test, expect } from "@playwright/test";
 
 const CASES = [
-  { link: /^For business$/, heading: /your loyalty program, live today/i },
+  { link: /^For business$/, heading: /your loyalty program, ready today/i },
   { link: /^How it works$/, heading: /a stamp for every visit/i },
 ] as const;
 
