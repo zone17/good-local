@@ -340,8 +340,8 @@ function CheckinScreen() {
             Camera off? Use your phone number instead.
           </span>
           <span style={{ color: "var(--ink-500)", fontSize: 13, lineHeight: 1.6 }}>
-            Give the counter your number and they&apos;ll stamp you in — your
-            passport arrives by text.
+            Give the counter your number and they&apos;ll stamp you in. Your
+            stamps stay with your number, ready whenever you claim your passport.
           </span>
         </div>
       </div>

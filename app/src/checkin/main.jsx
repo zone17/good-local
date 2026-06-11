@@ -20,6 +20,7 @@
 // ============================================================
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { ErrorBoundary } from "../lib/recover.jsx";
 import "@ds/styles.css";
 import { Stamp, StampGrid } from "@ds/components/passport/Stamp.jsx";
 import { ProgressMeter } from "@ds/components/passport/ProgressMeter.jsx";
@@ -53,11 +54,18 @@ const ERROR_COPY = {
   },
   UNAUTHENTICATED: {
     title: "Something went sideways.",
-    body: "Give it another scan — your passport is safe.",
+    body: "Your passport is safe. Give it another try.",
+    retryable: true,
+  },
+  OFFLINE: {
+    title: "You're offline.",
+    body: "Reconnect and try again. Your stamps are safe.",
+    retryable: true,
   },
   DEFAULT: {
     title: "Something went sideways.",
-    body: "Give it another scan — your passport is safe.",
+    body: "Your passport is safe. Give it another try.",
+    retryable: true,
   },
 };
 
@@ -82,33 +90,36 @@ function App() {
   const [result, setResult] = useState(null);
   const [errorCode, setErrorCode] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  // Callable (not just a mount effect) so the error screen's "Try again" can
+  // re-run the attempt without forcing a physical re-scan of the QR (spec 002
+  // FR-014). A repeat after an already-committed stamp safely lands on
+  // DAILY_LIMIT — the server dedupes, so retry never double-stamps.
+  const attempt = async () => {
     const { slug, code } = parseTarget();
     if (!slug || !code) {
       setErrorCode("CODE_INVALID");
       setPhase("error");
       return;
     }
-    (async () => {
-      try {
-        const data = await recordCheckIn({ businessSlug: slug, codeValue: code });
-        if (cancelled) return;
-        setResult({ ...data, slug });
-        setPhase("success");
-      } catch (err) {
-        if (cancelled) return;
-        setErrorCode(err.code || "DEFAULT");
-        setPhase("error");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    setPhase("stamping");
+    try {
+      const data = await recordCheckIn({ businessSlug: slug, codeValue: code });
+      setResult({ ...data, slug });
+      setPhase("success");
+    } catch (err) {
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+      setErrorCode(offline ? "OFFLINE" : err.code || "DEFAULT");
+      setPhase("error");
+    }
+  };
+
+  useEffect(() => {
+    attempt();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run-once mount attempt; retries go through the error screen
   }, []);
 
   if (phase === "stamping") return <Stamping />;
-  if (phase === "error") return <ErrorScreen code={errorCode} />;
+  if (phase === "error") return <ErrorScreen code={errorCode} onRetry={attempt} />;
   if (phase === "claim") return <ClaimSheet onClose={() => setPhase("success")} />;
   return <Success result={result} onClaim={() => setPhase("claim")} />;
 }
@@ -292,7 +303,7 @@ function Success({ result, onClaim }) {
           </div>
         ) : (
           <Button variant="wallet" block disabled={adding} onClick={() => setShowSheet(true)}>
-            {adding ? "Saving…" : "Add Passport to Apple Wallet"}
+            {adding ? "Saving…" : "Save my passport"}
           </Button>
         )}
         <Button variant="secondary" block as="a" href="/app">
@@ -300,7 +311,7 @@ function Success({ result, onClaim }) {
         </Button>
         {!added ? (
           <Button variant="ghost" block onClick={onClaim}>
-            Save my passport with my phone
+            Keep it with my phone number
           </Button>
         ) : null}
       </div>
@@ -334,7 +345,7 @@ function WalletAddSheet({ name, perk, stampLabel, adding, onAdd, onClose }) {
     >
       <div
         role="dialog"
-        aria-label="Add your passport to your wallet"
+        aria-label="Save your passport"
         style={{
           background: "var(--paper-50)",
           borderTopLeftRadius: 24, borderTopRightRadius: 24,
@@ -369,7 +380,7 @@ function WalletAddSheet({ name, perk, stampLabel, adding, onAdd, onClose }) {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
           <Button variant="wallet" block disabled={adding} onClick={onAdd}>
-            {adding ? "Saving…" : "Add to Apple Wallet"}
+            {adding ? "Saving…" : "Save my passport"}
           </Button>
           <Button variant="ghost" block onClick={onClose}>Not now</Button>
         </div>
@@ -378,7 +389,7 @@ function WalletAddSheet({ name, perk, stampLabel, adding, onAdd, onClose }) {
   );
 }
 
-function ErrorScreen({ code }) {
+function ErrorScreen({ code, onRetry }) {
   const copy = ERROR_COPY[code] || ERROR_COPY.DEFAULT;
   return (
     <Shell>
@@ -399,6 +410,13 @@ function ErrorScreen({ code }) {
             {copy.title}
           </div>
           <div style={{ color: "var(--ink-700)", fontSize: 15, lineHeight: 1.5 }}>{copy.body}</div>
+          {copy.retryable && onRetry ? (
+            <div style={{ marginTop: 20 }}>
+              <Button variant="primary" block onClick={onRetry}>
+                Try again
+              </Button>
+            </div>
+          ) : null}
           {copy.passport ? (
             <div style={{ marginTop: 20 }}>
               <Button variant="secondary" block as="a" href="/app">
@@ -428,7 +446,15 @@ function ClaimSheet({ onClose }) {
       if (res && res.dev_otp) setDevOtp(res.dev_otp);
       setStep("otp");
     } catch (e) {
-      setErr(e.code === "PHONE_INVALID" ? "Enter a number like +1 845 555 0142." : "Couldn't send the code. Try again.");
+      setErr(
+        e.code === "PHONE_INVALID"
+          ? "Enter a number like +1 845 555 0142."
+          : e.code === "SMS_UNAVAILABLE"
+            ? "Texting is not available just yet. Your stamps are still saved on this phone."
+            : e.code === "RATE_LIMITED"
+              ? "Too many codes requested. Wait a bit, then try again."
+              : "Couldn't send the code. Try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -444,7 +470,9 @@ function ClaimSheet({ onClose }) {
       setErr(
         e.code === "OTP_EXPIRED"
           ? "That code expired. Send a fresh one."
-          : "That code didn't match. Try again.",
+          : e.code === "RATE_LIMITED"
+            ? "Too many tries. Wait a few minutes, then send a fresh code."
+            : "That code didn't match. Try again.",
       );
     } finally {
       setBusy(false);
@@ -475,11 +503,15 @@ function ClaimSheet({ onClose }) {
               className="gl-input"
               type="tel"
               inputMode="tel"
+              autoComplete="tel"
               placeholder="+1 845 555 0142"
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/[^\d+]/g, ""))}
               aria-label="Phone number"
             />
+            <div style={{ color: "var(--ink-500)", fontSize: 12, marginTop: 8, lineHeight: 1.45 }}>
+              By entering your number you agree to receive a one time text from Good Local. Message and data rates may apply.
+            </div>
             {err ? <div style={{ color: "var(--stamp-700)", fontSize: 13, marginTop: 8 }}>{err}</div> : null}
             <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
               <Button variant="primary" block disabled={busy || phone.length < 8} onClick={sendCode}>
@@ -496,12 +528,13 @@ function ClaimSheet({ onClose }) {
           <>
             <div style={{ color: "var(--ink-500)", fontSize: 14, marginBottom: 16 }}>
               Enter the 6-digit code we sent to {phone}.
-              {devOtp ? <span style={{ display: "block", marginTop: 6, fontFamily: "var(--font-mono)" }}>dev code: {devOtp}</span> : null}
+              {import.meta.env.DEV && devOtp ? <span style={{ display: "block", marginTop: 6, fontFamily: "var(--font-mono)" }}>dev code: {devOtp}</span> : null}
             </div>
             <input
               className="gl-input"
               type="text"
               inputMode="numeric"
+              autoComplete="one-time-code"
               maxLength={6}
               placeholder="123456"
               value={otp}
@@ -512,6 +545,9 @@ function ClaimSheet({ onClose }) {
             <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
               <Button variant="primary" block disabled={busy || otp.length < 6} onClick={verify}>
                 {busy ? "Checking…" : "Confirm"}
+              </Button>
+              <Button variant="ghost" block disabled={busy} onClick={sendCode}>
+                Send a fresh code
               </Button>
               <Button variant="ghost" block onClick={onClose}>
                 Not now
@@ -553,4 +589,8 @@ function codeLabel(name) {
   return (initials || name.slice(0, 3)).slice(0, 4);
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(document.getElementById("root")).render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>,
+);

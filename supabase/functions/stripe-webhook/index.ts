@@ -61,6 +61,15 @@ Deno.serve(async (req: Request) => {
     await handleStripeEvent(event, db);
   } catch (err) {
     // Non-2xx → Stripe retries; the event.id dedup keeps the retry idempotent.
+    // Log before responding: a persistently failing endpoint silently diverges
+    // billing state from Stripe with no trail (audit OBS-007).
+    console.error(JSON.stringify({
+      fn: "stripe-webhook",
+      event: "handler_failed",
+      stripe_event_id: (event as { id?: string })?.id ?? null,
+      stripe_event_type: (event as { type?: string })?.type ?? null,
+      message: String(err),
+    }));
     return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
   }
 

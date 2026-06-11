@@ -50,8 +50,8 @@ export default function Landing() {
             <p style={{ fontSize: 18, lineHeight: 1.55, color: "var(--ink-700)", margin: "18px 0 26px", maxWidth: 540, textWrap: "pretty" }}>
               Good Local is a passport for the independent places worth the trip.
               Wander the river towns, earn a stamp at every stop, and become a regular
-              where you belong. Free for locals and weekenders. Owners go live the same
-              day.
+              where you belong. Free for locals and weekenders. Owners go live the day
+              they are approved, usually the same day.
             </p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Button variant="primary" size="lg" as="a" href="/app" leadingIcon={<Icon name="wallet" size={20} />}>
@@ -100,7 +100,7 @@ export default function Landing() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 20 }} className="gl-3col">
           {[
-            { icon: "wallet", title: "Add it at the register", body: "Tap once and your passport lands in your phone wallet. No app to download, ever." },
+            { icon: "wallet", title: "Add it at the register", body: "Tap once and your passport is saved to your phone. No app to download, ever." },
             { icon: "qr", title: "Earn a stamp", body: "Every visit adds a stamp and moves you toward the perk each place offers." },
             { icon: "compass", title: "Fill in the region", body: "Town by town, you map the cafés, inns, and outfitters that locals actually return to." },
           ].map((s, i) => (
@@ -140,9 +140,9 @@ export default function Landing() {
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 44, alignItems: "center" }} className="gl-2col">
           <div>
             <Eyebrow color="var(--ochre-700)">For business owners</Eyebrow>
-            <Display size={34}>Your loyalty program, live today.</Display>
+            <Display size={34}>Your loyalty program, ready today.</Display>
             <p style={{ fontSize: 16, lineHeight: 1.55, color: "var(--ink-700)", margin: "16px 0 20px" }}>
-              Good Local gives you a modern loyalty program you can launch this
+              Good Local gives you a modern loyalty program you can set up this
               afternoon. Stamps for every visit, perks you design and fund yourself,
               and a calm dashboard showing exactly who comes back. It works on its own
               from day one. As your neighbors join, the whole region becomes one front
@@ -150,7 +150,7 @@ export default function Landing() {
             </p>
             <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px", display: "grid", gap: 10 }}>
               {[
-                "Live the same day, at the $79 founding rate",
+                "Live the day you are approved, at the $79 founding rate",
                 "Perks you own and control, never a shared currency",
                 "See your real regulars, not vanity numbers",
               ].map((t, i) => (
