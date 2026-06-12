@@ -97,6 +97,31 @@ export async function signUpOwner(email, password) {
 }
 
 /**
+ * Send a password-reset email (spec 002 FR-021). The link returns the owner
+ * to /business, where the PASSWORD_RECOVERY auth event mounts the
+ * set-new-password form. Origin-relative so local dev and production both
+ * resolve correctly (the hosted auth allowlist carries the production URL).
+ * @param {string} email
+ * @returns {Promise<void>}
+ */
+export async function resetOwnerPassword(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/business`,
+  });
+  if (error) throw error;
+}
+
+/**
+ * Set a new password on the active (recovery) session.
+ * @param {string} newPassword
+ * @returns {Promise<void>}
+ */
+export async function updatePassword(newPassword) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}
+
+/**
  * End the current session (owner/admin sign-out; patrons stay anonymous-first).
  * @returns {Promise<void>}
  */

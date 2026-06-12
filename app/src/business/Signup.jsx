@@ -13,7 +13,7 @@
 import React, { useState } from "react";
 import { Button, Card, Field, Input, Select, Notice, SealMark } from "../ds.js";
 import { TOWNS } from "../lib/towns.js";
-import { signUpOwner } from "../lib/auth.js";
+import { signUpOwner, signInOwner } from "../lib/auth.js";
 import * as api from "../lib/api.js";
 
 function uuid() {
@@ -51,20 +51,36 @@ export function PendingApproval() {
 
 export default function Signup() {
   const [businessName, setBusinessName] = useState("");
-  const [ownerName, setOwnerName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [town, setTown] = useState(TOWNS[0].slug);
+  const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  // Stripe Checkout's cancel_url returns here with ?canceled=1 — acknowledge
+  // it instead of presenting a blank form (audit ERR-022).
+  const [canceled] = useState(
+    () => new URLSearchParams(window.location.search).get("canceled") === "1",
+  );
 
   async function onSubmit(e) {
     e.preventDefault();
     setError(null);
     setBusy(true);
     try {
-      // Establish the owner identity (email + password).
-      await signUpOwner(email, password);
+      // Establish the owner identity (email + password). A retry after a
+      // failed/abandoned checkout already created this account — fall back
+      // to signing in with the entered credentials instead of dead-ending
+      // on "User already registered" (audit UX-018).
+      try {
+        await signUpOwner(email, password);
+      } catch (signupErr) {
+        if (/already registered/i.test(signupErr?.message || "")) {
+          await signInOwner(email.trim(), password);
+        } else {
+          throw signupErr;
+        }
+      }
       // Mint the Stripe Checkout session; the edge fn creates the pending
       // business row (service role) and returns the hosted checkout URL.
       const { checkout_url } = await api.createCheckoutSession({
@@ -93,6 +109,15 @@ export default function Signup() {
           kit, and a calm dashboard. Set it up today; you are live the day we approve.
         </p>
 
+        {canceled && !error ? (
+          <div style={{ marginTop: 16 }}>
+            <Notice tone="river" title="Checkout was canceled">
+              No charge was made. Fill in your details below to pick up where you
+              left off; if you already created your password, just use it again.
+            </Notice>
+          </div>
+        ) : null}
+
         {error ? (
           <div style={{ marginTop: 16 }}>
             <Notice tone="ochre" title="We could not start checkout">
@@ -103,10 +128,7 @@ export default function Signup() {
 
         <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 18 }}>
           <Field label="Business name">
-            <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="The Heron" required />
-          </Field>
-          <Field label="Your name">
-            <Input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="Mira Eisen" required />
+            <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="The Heron" autoComplete="organization" required />
           </Field>
           <Field label="Town">
             <Select value={town} onChange={(e) => setTown(e.target.value)}>
@@ -116,14 +138,29 @@ export default function Signup() {
             </Select>
           </Field>
           <Field label="Email" hint="We send your weekly note and approval here.">
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@yourplace.com" required />
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@yourplace.com" autoComplete="email" required />
           </Field>
           <Field label="Password" hint="At least 8 characters.">
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} autoComplete="new-password" required />
           </Field>
 
-          <Button type="submit" block disabled={busy}>
-            {busy ? "Starting checkout…" : "Continue to payment — $79/mo"}
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13.5, color: "var(--ink-700)", lineHeight: 1.5, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              required
+              style={{ marginTop: 3, width: 16, height: 16, accentColor: "var(--pine-700)" }}
+            />
+            <span>
+              I agree to the <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "var(--pine-700)" }}>terms of service</a> and
+              the <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "var(--pine-700)" }}>privacy policy</a>, including
+              the $79 monthly membership and that stamps carry no cash value.
+            </span>
+          </label>
+
+          <Button type="submit" block disabled={busy || !agreed}>
+            {busy ? "Starting checkout…" : "Continue to payment, $79/mo"}
           </Button>
           <p style={{ fontSize: 12, color: "var(--ink-500)", textAlign: "center", lineHeight: 1.4 }}>
             Card handled by Stripe. We never see your card number. Cancel anytime.

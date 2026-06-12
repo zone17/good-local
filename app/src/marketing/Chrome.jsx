@@ -113,7 +113,7 @@ export function SiteFooter() {
         <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
           <FooterCol title="Explore" links={[["Open passport", "/app"], ["Discover", "/app"], ["How it works", "/#how"]]} />
           <FooterCol title="Business" links={[["List your business", "/business/signup"], ["Sign in", "/business"], ["Pricing", "/#business"]]} />
-          <FooterCol title="More" links={[["Blog", "/blog"], ["Podcast", "/podcast"], ["Admin", "/admin"]]} />
+          <FooterCol title="More" links={[["Blog", "/blog"], ["Podcast", "/podcast"], ["Privacy", "/privacy"], ["Terms", "/terms"]]} />
         </div>
       </div>
       <div style={{ maxWidth: 1080, margin: "28px auto 0", paddingTop: 16, borderTop: "1px solid var(--ink-100)", fontSize: 12.5, color: "var(--ink-500)" }}>

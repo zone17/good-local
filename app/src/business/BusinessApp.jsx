@@ -13,9 +13,62 @@ import {
 } from "../ds.js";
 import OwnerSignIn from "./OwnerSignIn.jsx";
 import * as api from "../lib/api.js";
-import { supabase } from "../lib/auth.js";
+import { supabase, updatePassword } from "../lib/auth.js";
 import { useBusiness } from "./useBusiness.js";
 import RegisterKit from "./RegisterKit.jsx";
+
+// ---- Password recovery (spec 002 FR-021) --------------------
+// The reset email returns the owner to /business with a recovery session;
+// supabase-js announces it as PASSWORD_RECOVERY. Until a new password is
+// set, that form takes over the surface.
+function useRecoveryMode() {
+  const [recovering, setRecovering] = useState(false);
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") setRecovering(true);
+    });
+    return () => sub?.subscription?.unsubscribe?.();
+  }, []);
+  return [recovering, setRecovering];
+}
+
+function SetNewPassword({ onDone }) {
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await updatePassword(password);
+      onDone();
+    } catch (err) {
+      setError(err?.message || "We could not set that password. Try a different one.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{ minHeight: "100%", display: "grid", placeItems: "center", background: "var(--paper-50)", padding: 24 }}>
+      <Card style={{ padding: 28, width: 420, maxWidth: "92vw" }}>
+        <div className="gl-eyebrow" style={{ textAlign: "center" }}>Good Local · Business</div>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 600, textAlign: "center", margin: "4px 0 18px", letterSpacing: "-0.012em" }}>
+          Set a new password
+        </div>
+        {error ? <Notice tone="ochre" style={{ marginBottom: 12 }}>{error}</Notice> : null}
+        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <Field label="New password" hint="At least 8 characters.">
+            <Input type="password" autoComplete="new-password" minLength={8} required value={password}
+                   onChange={(e) => setPassword(e.target.value)} placeholder="Your new password"/>
+          </Field>
+          <Button type="submit" block disabled={busy}>{busy ? "Saving…" : "Save and continue"}</Button>
+        </form>
+      </Card>
+    </div>
+  );
+}
 
 // ---- Dashboard data hook (T052; real-only since T064) ------
 // Reads the owner's real aggregates via api.getDashboard. The app shell
@@ -826,6 +879,12 @@ function BusinessApp() {
   const [view, setView] = useState("dashboard");
   const [builderOpen, setBuilderOpen] = useState(false);
   const { business, loading, needsAuth, reload } = useBusiness();
+  const [recovering, setRecovering] = useRecoveryMode();
+
+  // Recovery session from the reset email: set the new password first.
+  if (recovering) {
+    return <SetNewPassword onDone={() => { setRecovering(false); reload(); }} />;
+  }
 
   // T064 gates: no session -> sign in; session without a business -> signup path.
   if (needsAuth) return <OwnerSignIn onSignedIn={reload}/>;
@@ -849,6 +908,52 @@ function BusinessApp() {
             kit — and be live the same day.
           </div>
           <Button onClick={() => { window.location.href = "/business/signup"; }}>Set up your program</Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // A paid-but-unapproved owner must see an explicit in-review state on every
+  // return visit — not a live-looking empty dashboard they might print and
+  // post a QR card from (audit UX-016). Suspended gets its own honest state.
+  if (business.status === "pending") {
+    return (
+      <div style={{ minHeight: "100%", display: "grid", placeItems: "center", padding: 24 }}>
+        <Card style={{ padding: 28, width: 480, maxWidth: "92vw", textAlign: "center" }}>
+          <div className="gl-eyebrow">Good Local · Business</div>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, margin: "6px 0 10px" }}>
+            {business.name} is in review.
+          </div>
+          <div style={{ color: "var(--ink-700)", fontSize: 14, lineHeight: 1.6, marginBottom: 8, textAlign: "left" }}>
+            Your founding membership is set up and your card is on file. We review
+            every business by hand, usually within a day, and email you the moment
+            your program is open.
+          </div>
+          <div style={{ color: "var(--ink-700)", fontSize: 14, lineHeight: 1.6, marginBottom: 16, textAlign: "left" }}>
+            What you can do now: think about your first perk. The best ones are
+            low cost and visit shaped, like a regular&apos;s pour or first pick of
+            new arrivals. Hold off on posting your register card until we flip
+            you live, so every scan counts.
+          </div>
+          <Button variant="secondary" block onClick={reload}>Check my status</Button>
+        </Card>
+      </div>
+    );
+  }
+  if (business.status === "suspended") {
+    return (
+      <div style={{ minHeight: "100%", display: "grid", placeItems: "center", padding: 24 }}>
+        <Card style={{ padding: 28, width: 480, maxWidth: "92vw", textAlign: "center" }}>
+          <div className="gl-eyebrow">Good Local · Business</div>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, margin: "6px 0 10px" }}>
+            Your program is paused.
+          </div>
+          <div style={{ color: "var(--ink-700)", fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>
+            Billing needs attention, so check-ins are paused. Your patrons keep
+            every stamp they earned. Write to help@goodlocal.app and we will get
+            you going again.
+          </div>
+          <Button variant="secondary" block onClick={reload}>Check my status</Button>
         </Card>
       </div>
     );

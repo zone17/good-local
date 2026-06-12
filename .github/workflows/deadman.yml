@@ -1,0 +1,73 @@
+# ============================================================
+# deadman.yml — daily liveness check for the jobs the experiment
+# depends on (spec 002 FR-004, audit OBS-002/DB-004).
+#
+# The binding gate reads (Aug 15 kill condition, Nov 1 retention) are
+# taken from gate_metric_snapshots, which has NO backfill: a silently
+# dead pg_cron job permanently loses rows. Likewise a dead rotation
+# sweep leaves compromised printed codes scannable forever (D-004).
+# This workflow fails loudly (GitHub sends the failure email) when:
+#   1. today's snapshot rows are missing (runs 40 min after the job),
+#   2. any cron run failed in the last 24h,
+#   3. any active business's current code is older than its rotation
+#      interval plus one day of grace.
+#
+# Secret GL_DEADMAN_DB_URL: read-only-ish pooler conninfo. Runs on a
+# schedule from the default branch only; fork PRs never see secrets.
+# Actions pinned to commit SHAs (audit CICD-012) because this workflow
+# carries a credential.
+# ============================================================
+name: deadman
+
+on:
+  schedule:
+    - cron: "0 10 * * *" # 10:00 UTC, after rotation (09:10) + snapshot (09:20) + purge (09:30)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify scheduled jobs ran and codes are fresh
+        env:
+          DB_URL: ${{ secrets.GL_DEADMAN_DB_URL }}
+        run: |
+          psql "$DB_URL" --set ON_ERROR_STOP=1 <<'SQL'
+          do $deadman$
+          declare
+            v_snapshots int;
+            v_failed    int;
+            v_stale     int;
+          begin
+            select count(*) into v_snapshots
+            from gate_metric_snapshots
+            where taken_on = current_date;
+            if v_snapshots = 0 then
+              raise exception 'DEADMAN: no gate_metric_snapshots rows for today. The snapshot job may be dead; run select snapshot_gate_metrics() and investigate cron.job_run_details.';
+            end if;
+
+            select count(*) into v_failed
+            from cron.job_run_details
+            where status = 'failed'
+              and start_time > now() - interval '24 hours';
+            if v_failed > 0 then
+              raise exception 'DEADMAN: % failed pg_cron run(s) in the last 24h. See cron.job_run_details.', v_failed;
+            end if;
+
+            select count(*) into v_stale
+            from check_in_codes c
+            join businesses b on b.id = c.business_id and b.status = 'active'
+            left join rotation_schedules rs on rs.business_id = c.business_id
+            where c.status = 'current'
+              and c.created_at < now() - make_interval(days => coalesce(rs.interval_days, 7) + 1);
+            if v_stale > 0 then
+              raise exception 'DEADMAN: % active business(es) carry a stale current code. The rotation sweep may be dead.', v_stale;
+            end if;
+
+            raise notice 'deadman: snapshots=%, failed_runs=0, stale_codes=0 — all alive', v_snapshots;
+          end $deadman$;
+          SQL

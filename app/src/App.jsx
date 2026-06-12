@@ -15,6 +15,7 @@ const Signup = lazyRetry(() => import("./business/Signup.jsx"));
 const PendingApproval = lazyRetry(() =>
   import("./business/Signup.jsx").then((m) => ({ default: m.PendingApproval })));
 const AdminRoute = lazyRetry(() => import("./admin/AdminRoute.jsx"));
+const Legal = lazyRetry(() => import("./marketing/Legal.jsx"));
 
 // Minimal path routing — zero router dependency.
 //   /                  → marketing landing (the public front door)
@@ -59,6 +60,8 @@ function Routes() {
   }
   if (at("/blog")) return <Blog />;
   if (at("/podcast")) return <Podcast />;
+  if (at("/privacy")) return <Legal page="privacy" />;
+  if (at("/terms")) return <Legal page="terms" />;
 
   // Root and anything else → the marketing landing.
   return <Landing />;
