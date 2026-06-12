@@ -60,6 +60,22 @@ Deno.serve(async (req: Request) => {
       p_phone: phone,
       p_otp: body.otp,
     });
+    if (!error) {
+      // Record SMS consent on the claimed patron (spec FR-007): the patron
+      // agreed at the input when they asked for the code; a completed claim
+      // proves the number is theirs. First consent wins; best-effort — a
+      // consent-write failure must never fail the claim itself.
+      try {
+        const svc = createClient(url, serviceKey, { auth: { persistSession: false } });
+        await svc
+          .from("patrons")
+          .update({ sms_consent_at: new Date().toISOString(), sms_consent_source: "otp_claim" })
+          .eq("phone", phone)
+          .is("sms_consent_at", null);
+      } catch (_consentErr) {
+        console.error(JSON.stringify({ fn: "claim-passport", event: "consent_write_failed", phone: maskPhone(phone) }));
+      }
+    }
     if (error) {
       // claim_passport raises errcode P0001 with MESSAGE = the §7 code.
       const code = (error.message || "").trim();

@@ -103,16 +103,6 @@ export async function buildCheckout(
     .maybeSingle();
   if (!town) throw new CheckoutError("VALIDATION", "town");
 
-  // DUPLICATE_PENDING: a pending business with the same name + town exists.
-  const { data: dup } = await db
-    .from("businesses")
-    .select("id")
-    .eq("town_id", town.id)
-    .eq("name", req.business_name.trim())
-    .eq("status", "pending")
-    .maybeSingle();
-  if (dup) throw new CheckoutError("DUPLICATE_PENDING");
-
   // ---- owner = the authenticated caller, full stop ----
   // The caller proved control of this email by signing up/in before checkout;
   // we only assert the request matches the session it rides on.
@@ -122,6 +112,78 @@ export async function buildCheckout(
     throw new CheckoutError("FORBIDDEN", "owner_email does not match session");
   }
   const ownerId = authedUser.id;
+
+  // Stripe Checkout session builder, shared by the fresh-signup path and the
+  // two resume paths below (same-key replay, own-pending retry).
+  const mintSession = async (bizId: string): Promise<string> => {
+    const siteUrl = env.SITE_URL ?? "https://goodlocal.app";
+    const form = new URLSearchParams();
+    form.set("mode", "subscription");
+    form.set("success_url", `${siteUrl}/business?signup=pending`);
+    form.set("cancel_url", `${siteUrl}/business/signup?canceled=1`);
+    form.set("customer_email", req.owner_email);
+    form.set("metadata[business_id]", bizId);
+    form.set("subscription_data[metadata][business_id]", bizId);
+
+    if (env.STRIPE_PRICE_FOUNDING) {
+      form.set("line_items[0][price]", env.STRIPE_PRICE_FOUNDING);
+      form.set("line_items[0][quantity]", "1");
+    } else {
+      // Inline $79/mo recurring price (no pre-created price needed locally).
+      form.set("line_items[0][quantity]", "1");
+      form.set("line_items[0][price_data][currency]", "usd");
+      form.set("line_items[0][price_data][unit_amount]", "7900");
+      form.set("line_items[0][price_data][recurring][interval]", "month");
+      form.set("line_items[0][price_data][product_data][name]", "Good Local — Founding");
+    }
+
+    const resp = await fetchImpl("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": req.idempotency_key,
+      },
+      body: form.toString(),
+    });
+    if (!resp.ok) {
+      const detail = await resp.text().catch(() => "");
+      throw new CheckoutError("STRIPE_ERROR", detail.slice(0, 200));
+    }
+    const session = (await resp.json()) as { url?: string };
+    if (!session.url) throw new CheckoutError("STRIPE_ERROR", "no checkout url");
+    return session.url;
+  };
+
+  // ---- idempotent replay: the same idempotency_key returns the original
+  // outcome (contracts §1.3) instead of dead-ending on DUPLICATE_PENDING
+  // after a network drop (audit API-002).
+  const { data: prior } = await db
+    .from("businesses")
+    .select("id, owner_user_id")
+    .eq("signup_idempotency_key", req.idempotency_key)
+    .maybeSingle();
+  if (prior) {
+    if (prior.owner_user_id !== ownerId) throw new CheckoutError("FORBIDDEN");
+    return { checkout_url: await mintSession(prior.id), business_id: prior.id };
+  }
+
+  // DUPLICATE_PENDING: a pending business with the same name + town exists.
+  // If the CALLER owns it (a retry after an abandoned/failed checkout), resume
+  // it with a fresh session instead of stranding the signup (audit ERR-010).
+  const { data: dup } = await db
+    .from("businesses")
+    .select("id, owner_user_id")
+    .eq("town_id", town.id)
+    .eq("name", req.business_name.trim())
+    .eq("status", "pending")
+    .maybeSingle();
+  if (dup) {
+    if (dup.owner_user_id === ownerId) {
+      return { checkout_url: await mintSession(dup.id), business_id: dup.id };
+    }
+    throw new CheckoutError("DUPLICATE_PENDING");
+  }
 
   // ---- slug + stamp_code (dedupe) ----
   let slug = kebab(req.business_name) || "business";
@@ -158,6 +220,7 @@ export async function buildCheckout(
       hours: {},
       stamp_code: stampCode,
       status: "pending",
+      signup_idempotency_key: req.idempotency_key,
     })
     .select("id")
     .single();
@@ -174,44 +237,17 @@ export async function buildCheckout(
   });
   await db.from("rotation_schedules").insert({ business_id: biz.id });
 
-  // ---- Stripe Checkout session (form-encoded) ----
-  const siteUrl = env.SITE_URL ?? "https://goodlocal.app";
-  const form = new URLSearchParams();
-  form.set("mode", "subscription");
-  form.set("success_url", `${siteUrl}/business?signup=pending`);
-  form.set("cancel_url", `${siteUrl}/business/signup?canceled=1`);
-  form.set("customer_email", req.owner_email);
-  form.set("metadata[business_id]", biz.id);
-  form.set("subscription_data[metadata][business_id]", biz.id);
-
-  if (env.STRIPE_PRICE_FOUNDING) {
-    form.set("line_items[0][price]", env.STRIPE_PRICE_FOUNDING);
-    form.set("line_items[0][quantity]", "1");
-  } else {
-    // Inline $79/mo recurring price (no pre-created price needed locally).
-    form.set("line_items[0][quantity]", "1");
-    form.set("line_items[0][price_data][currency]", "usd");
-    form.set("line_items[0][price_data][unit_amount]", "7900");
-    form.set("line_items[0][price_data][recurring][interval]", "month");
-    form.set("line_items[0][price_data][product_data][name]", "Good Local — Founding");
+  // ---- Stripe Checkout session ----
+  // On Stripe failure, roll back the rows this attempt created so the retry
+  // is clean — an orphaned pending row previously blocked every retry behind
+  // DUPLICATE_PENDING until manual cleanup (audit ERR-010).
+  try {
+    const checkoutUrl = await mintSession(biz.id);
+    return { checkout_url: checkoutUrl, business_id: biz.id };
+  } catch (err) {
+    await db.from("check_in_codes").delete().eq("business_id", biz.id);
+    await db.from("rotation_schedules").delete().eq("business_id", biz.id);
+    await db.from("businesses").delete().eq("id", biz.id).eq("status", "pending");
+    throw err;
   }
-
-  const resp = await fetchImpl("https://api.stripe.com/v1/checkout/sessions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Idempotency-Key": req.idempotency_key,
-    },
-    body: form.toString(),
-  });
-
-  if (!resp.ok) {
-    const detail = await resp.text().catch(() => "");
-    throw new CheckoutError("STRIPE_ERROR", detail.slice(0, 200));
-  }
-  const session = (await resp.json()) as { url?: string };
-  if (!session.url) throw new CheckoutError("STRIPE_ERROR", "no checkout url");
-
-  return { checkout_url: session.url, business_id: biz.id };
 }
