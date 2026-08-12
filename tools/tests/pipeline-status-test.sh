@@ -32,6 +32,12 @@ t_not() { # name forbidden_substring actual
   esac
 }
 
+rc_is() { # name expected_rc actual_rc
+  local name="$1" want="$2" got="$3"
+  if [ "$got" -eq "$want" ]; then PASS=$((PASS+1)); echo "  ok: $name"
+  else FAIL=$((FAIL+1)); echo "  FAIL: $name"; echo "        want exit $want, got $got"; fi
+}
+
 mkfix() { # writes a minimal valid 2-item roadmap (1 v1 + 1 deferred) to $DIR/docs/roadmap.md
   mkdir -p "$DIR/docs"
   cat > "$DIR/docs/roadmap.md" <<'EOF'
@@ -197,6 +203,98 @@ DIR=$(mktemp -d); mkdir -p "$DIR/docs"
 out=$(run --next-feature); rc=$?
 t "no roadmap: fallback message" "No docs/roadmap.md" "$out"
 [ "$rc" -eq 0 ] && { PASS=$((PASS+1)); echo "  ok: no roadmap: exit 0"; } || { FAIL=$((FAIL+1)); echo "  FAIL: exit $rc"; }
+rm -rf "$DIR"
+
+# ── 11. --check fails CLOSED: only a understood invocation may exit 0 ───────
+# The 2026-08-11 review found the catch-all arm let an unrecognized flag fall
+# through to the summary path and exit 0 — the skip signal. A boolean caller
+# (`if ... --check X; then skip; fi`) then skipped a phase that never ran.
+DIR=$(mktemp -d); mkdir -p "$DIR/.specify/memory" "$DIR/docs"
+echo "x" > "$DIR/.specify/memory/constitution.md"
+run --check constitution >/dev/null; rc_is "--check on a done phase: exit 0" 0 $?
+run --check design-foundation >/dev/null; rc_is "--check on an undone phase: exit 1" 1 $?
+run --check no-such-phase >/dev/null; rc_is "--check unknown phase: exit 1 (never 0)" 1 $?
+run --chek constitution >/dev/null; rc_is "typo'd flag: exit 2, NOT 0" 2 $?
+run --check --json constitution >/dev/null; rc_is "conflicting modes: exit 2" 2 $?
+run constitution --check >/dev/null; rc_is "bare positional: exit 2" 2 $?
+run --check >/dev/null; rc_is "--check with no phase: exit 2" 2 $?
+rm -rf "$DIR"
+
+# ── 12. --next-slug with no roadmap: empty + exit 0, not a jq crash ─────────
+# Case 10 covers this for --next-feature only; --next-slug aborted with
+# "Cannot iterate over null" and exit 5 on the cold-start state of every project.
+DIR=$(mktemp -d); mkdir -p "$DIR/docs"
+out=$(run --next-slug); rc=$?
+rc_is "no roadmap: --next-slug exit 0" 0 "$rc"
+t_not "no roadmap: --next-slug emits no jq error" "Cannot iterate" "$out"
+if [ -z "$out" ]; then PASS=$((PASS+1)); echo "  ok: no roadmap: --next-slug output empty"
+else FAIL=$((FAIL+1)); echo "  FAIL: no roadmap: --next-slug printed '$out'"; fi
+rm -rf "$DIR"
+
+# ── 13. --next-slug must refuse the same roadmap --next-feature BLOCKs ──────
+# Divergence here is silently wrong: the slug is captured into a workflow input.
+DIR=$(mktemp -d); mkfix
+sed -e 's/^- Slug: `alpha-feature`$//' "$DIR/docs/roadmap.md" > "$DIR/r.tmp" && mv "$DIR/r.tmp" "$DIR/docs/roadmap.md"
+out=$(run --next-feature)
+t "malformed: --next-feature BLOCKs" "BLOCKED" "$out"
+slug=$(run --next-slug); rc=$?
+t_not "malformed: --next-slug emits no slug" "feature" "$slug"
+if [ "$rc" -ne 0 ]; then PASS=$((PASS+1)); echo "  ok: malformed: --next-slug exits non-zero"
+else FAIL=$((FAIL+1)); echo "  FAIL: malformed: --next-slug exited 0 while --next-feature BLOCKed"; fi
+rm -rf "$DIR"
+
+# ── 14. field lines outside any section are not a phantom item ──────────────
+# A contributor blurb above the first heading parsed into an item that then won
+# the --next-feature recommendation over the real top item.
+DIR=$(mktemp -d); mkfix
+printf '%s\n' "Format reminder for contributors:" "- Slug: \`example-slug\`" "- Status: not-started" "" > "$DIR/hdr.tmp"
+cat "$DIR/docs/roadmap.md" >> "$DIR/hdr.tmp" && mv "$DIR/hdr.tmp" "$DIR/docs/roadmap.md"
+out=$(run --next-feature)
+t "phantom: proposes the real item" "Slug: alpha-feature" "$out"
+t_not "phantom: never proposes the example blurb" "example-slug" "$out"
+run >/dev/null; items=$(jq -r '[.backlog.items[].slug] | join(",")' "$DIR/status.json")
+t_not "phantom: example-slug absent from backlog" "example-slug" "$items"
+rm -rf "$DIR"
+
+# ── 15. newest verification report wins over an older PASS ─────────────────
+# Breaking on the first PASS let a stale pass mask a later FAILED run, so a
+# regressed feature stayed `verified` and dropped out of the gate.
+DIR=$(mktemp -d); mkfix; mkdir -p "$DIR/docs/verification"
+printf 'Result: PASS\n'   > "$DIR/docs/verification/2026-01-01-alpha-feature.md"
+printf 'Result: FAILED\n' > "$DIR/docs/verification/2026-08-01-alpha-feature.md"
+run >/dev/null; stage=$(jq -r '.backlog.items[0].stage' "$DIR/status.json")
+t_not "stale PASS + newer FAILED: not verified" "verified" "$stage"
+printf 'Result: PASS\n' > "$DIR/docs/verification/2026-09-01-alpha-feature.md"
+run >/dev/null; stage=$(jq -r '.backlog.items[0].stage' "$DIR/status.json")
+t "newest PASS: verified" "verified" "$stage"
+rm -rf "$DIR"
+
+# ── 16. spec/tasks globs are anchored: a short slug borrows no stage ────────
+# An unanchored *slug* matched any longer directory containing it, so `alpha`
+# inherited `003-alpha-feature-extended`'s stage.
+DIR=$(mktemp -d); mkfix; mkdir -p "$DIR/specs/003-alpha-feature-extended"
+echo "x" > "$DIR/specs/003-alpha-feature-extended/spec.md"
+run >/dev/null; stage=$(jq -r '.backlog.items[0].stage' "$DIR/status.json")
+t "unrelated longer spec dir: stage stays not-started" "not-started" "$stage"
+mkdir -p "$DIR/specs/003-alpha-feature"; echo "x" > "$DIR/specs/003-alpha-feature/spec.md"
+run >/dev/null; stage=$(jq -r '.backlog.items[0].stage' "$DIR/status.json")
+t "NNN-slug layout still detected" "specced" "$stage"
+rm -rf "$DIR"
+DIR=$(mktemp -d); mkfix; mkdir -p "$DIR/specs/alpha-feature"
+echo "x" > "$DIR/specs/alpha-feature/spec.md"
+run >/dev/null; stage=$(jq -r '.backlog.items[0].stage' "$DIR/status.json")
+t "exact-slug layout still detected" "specced" "$stage"
+rm -rf "$DIR"
+
+# ── 17. CRLF roadmap is not misclassified as malformed ─────────────────────
+# scrub()'s char class skipped decimal 13, so a bare (unquoted) slug kept its
+# trailing CR and failed the slug charset check.
+DIR=$(mktemp -d); mkdir -p "$DIR/docs"
+printf '# R\r\n\r\n### 1. Alpha\r\n- Slug: alpha-feature\r\n- Status: not-started\r\n\r\nAlpha prose.\r\n' > "$DIR/docs/roadmap.md"
+run >/dev/null; par=$(jq -c '.backlog.parse' "$DIR/status.json")
+t "CRLF + bare slug: 0 malformed" '"malformed":0' "$par"
+out=$(run --next-feature)
+t_not "CRLF: gate not BLOCKed by line endings" "BLOCKED" "$out"
 rm -rf "$DIR"
 
 echo ""
