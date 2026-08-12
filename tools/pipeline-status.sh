@@ -23,14 +23,33 @@ set -euo pipefail
 
 OUT="${PIPELINE_STATUS_OUT:-docs/pipeline-status.json}"
 MODE="summary"; CHECK_PHASE=""
+# Argument parsing FAILS CLOSED. --check's exit status is a skip signal for the
+# workflow's step 0, so anything this parser does not understand must exit
+# non-zero (2, the usage code) rather than fall through to the summary path and
+# exit 0 — a boolean caller reads exit 0 as "phase done" and skips it. That
+# means: reject unknown flags, and reject a second mode flag instead of letting
+# it silently override the first.
+set_mode() {
+  if [ "$MODE" != "summary" ] && [ "$MODE" != "$1" ]; then
+    echo "pipeline-status: conflicting modes ($MODE and $1)" >&2; exit 2
+  fi
+  MODE="$1"
+}
 for arg in "$@"; do
   case "$arg" in
-    --json) MODE="json" ;;
-    --check) MODE="check" ;;
-    --next-feature) MODE="next-feature" ;;
-    --next-slug) MODE="next-slug" ;;
+    --json) set_mode "json" ;;
+    --check) set_mode "check" ;;
+    --next-feature) set_mode "next-feature" ;;
+    --next-slug) set_mode "next-slug" ;;
     -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
-    *) [ "$MODE" = "check" ] && CHECK_PHASE="$arg" ;;
+    -*) echo "pipeline-status: unknown option '$arg'" >&2; exit 2 ;;
+    *)
+      if [ "$MODE" = "check" ]; then
+        CHECK_PHASE="$arg"
+      else
+        echo "pipeline-status: unexpected argument '$arg'" >&2; exit 2
+      fi
+      ;;
   esac
 done
 
@@ -154,10 +173,15 @@ if [ -f "$ROADMAP" ] && [ -s "$ROADMAP" ]; then
       name=""; slug=""; status=""; size=""; serves=""; feeds=""
     }
     BEGIN { v1 = "true" }
+    { sub(/\r$/, "") }
     /^## v1 line/       { flush(); v1 = "false"; next }
     /^## Promised but/  { flush(); inledger=1; next }
     inledger            { next }
-    /^### /             { flush(); sections++; name=$0; sub(/^### [0-9]+\.[ ]*/, "", name); next }
+    /^### /             { flush(); sections++; insection=1; name=$0; sub(/^### [0-9]+\.[ ]*/, "", name); next }
+    # Field lines count ONLY inside a section. Without this guard a format
+    # reminder or example block above the first heading parses into a phantom
+    # item that can win the --next-feature recommendation.
+    !insection          { next }
     /^[[:space:]]*[-*][[:space:]]*Slug:/   { slug=$0;   sub(/^[[:space:]]*[-*][[:space:]]*Slug:[ ]*`?/, "", slug);   sub(/`.*$/, "", slug); gsub(/[ ]/, "", slug); next }
     /^[[:space:]]*[-*][[:space:]]*Status:/ { status=$0; sub(/^[[:space:]]*[-*][[:space:]]*Status:[ ]*/, "", status); sub(/[ ].*$/, "", status); next }
     /^[[:space:]]*[-*][[:space:]]*Size:/   { size=$0;   sub(/^[[:space:]]*[-*][[:space:]]*Size:[ ]*/, "", size);     sub(/[ ].*$/, "", size); next }
@@ -189,19 +213,28 @@ if [ -f "$ROADMAP" ] && [ -s "$ROADMAP" ]; then
     # Derive the stage from artifacts on disk (the scanner never guesses).
     stage="not-started"
     [ -f "docs/flows/$bslug.md" ] && [ -s "docs/flows/$bslug.md" ] && stage="in-design"
-    for f in "specs/$bslug/spec.md" ".specify/specs/$bslug/spec.md" "specs/"*"$bslug"*"/spec.md"; do
+    # Spec/tasks globs are ANCHORED to the documented layouts. An unanchored
+    # *$bslug* matched any longer directory containing the slug as a substring,
+    # so a short slug inherited an unrelated feature's stage.
+    for f in "specs/$bslug/spec.md" ".specify/specs/$bslug/spec.md" "specs/"[0-9][0-9][0-9]"-$bslug/spec.md"; do
       [ -f "$f" ] && [ -s "$f" ] && { stage="specced"; break; }
     done
-    for f in "specs/$bslug/tasks.md" ".specify/specs/$bslug/tasks.md" "specs/"*"$bslug"*"/tasks.md"; do
+    for f in "specs/$bslug/tasks.md" ".specify/specs/$bslug/tasks.md" "specs/"[0-9][0-9][0-9]"-$bslug/tasks.md"; do
       [ -f "$f" ] && [ -s "$f" ] && { stage="building"; break; }
     done
     # `verified` requires the report to SAY it passed — a FAILED acceptance
-    # report on disk must not remove the feature from the gate.
+    # report on disk must not remove the feature from the gate. Read only the
+    # NEWEST report for this slug: breaking on the first PASS let a stale pass
+    # mask a later FAILED run, silently dropping a regressed feature from the
+    # gate. The filename must END with the slug so one slug cannot match a
+    # longer one (`marketing` vs `marketing-seo`).
+    newest_report=""
     for v in "docs/verification/"*"$bslug"*; do
-      if [ -f "$v" ] && [ -s "$v" ] && grep -qiE 'Result:?\**[[:space:]]*PASS' "$v" 2>/dev/null; then
-        stage="verified"; break
-      fi
+      [ -f "$v" ] && [ -s "$v" ] && newest_report="$v"
     done
+    if [ -n "$newest_report" ] && grep -qiE 'Result:?\**[[:space:]]*PASS' "$newest_report" 2>/dev/null; then
+      stage="verified"
+    fi
     # `shipped` is the one human-set stage: the roadmap's Status line records the
     # human act of shipping (merge to main), which no tree artifact proves.
     [ "$bstatus" = "shipped" ] && stage="shipped"
@@ -213,7 +246,12 @@ if [ -f "$ROADMAP" ] && [ -s "$ROADMAP" ]; then
   done <<< "$roadmap_records"
   if [ "$roadmap_sections" -ne $((roadmap_parsed + roadmap_malformed)) ]; then
     echo "pipeline-status: WARNING — $roadmap_sections roadmap sections but $((roadmap_parsed + roadmap_malformed)) accounted for; docs/roadmap.md may have drifted from the format contract" >&2
+    # Escalate BOTH directions. Undercounting means sections went missing;
+    # overcounting means items were parsed that no heading accounts for. Either
+    # way the file no longer matches the format contract, and --next-feature
+    # must BLOCK rather than present whatever it happened to parse.
     missing=$((roadmap_sections - roadmap_parsed - roadmap_malformed))
+    [ "$missing" -lt 0 ] && missing=$(( -missing ))
     [ "$missing" -gt 0 ] && roadmap_malformed=$((roadmap_malformed + missing))
   fi
 fi
@@ -246,13 +284,28 @@ result=$(jq -n \
 # v1-only: after the v1 line ships, deferred evidence-gated items must not be
 # silently proposed as "Next" — that state gets its own explicit message.
 next_unfinished() {
-  jq -r '[.[] | select(.v1 == true and .stage != "shipped" and .stage != "verified")][0] // empty | @json' <<< "$backlog"
+  # `// []` keeps this null-safe: $backlog is the literal string "null" when no
+  # docs/roadmap.md exists, and `.[]` over null aborts jq (exit 5), which under
+  # `set -euo pipefail` killed the caller before it could exit 0.
+  jq -r '[(. // [])[] | select(.v1 == true and .stage != "shipped" and .stage != "verified")][0] // empty | @json' <<< "$backlog"
 }
 
 # --next-slug — bare slug of the topmost unfinished v1 item (newline-free), for
 # the workflow's `| default()` fallbacks on inputs.feature_slug. Empty output
 # when there is no next item; deterministic; exit 0 always.
+#
+# It applies the SAME guards as --next-feature. This mode is consumed as
+# `slug=$(... --next-slug)`, so emitting a plausible slug from a roadmap that
+# --next-feature would BLOCK is the silent-wrong-answer failure: the caller
+# proceeds on a broken backlog with no signal at all.
 if [ "$MODE" = "next-slug" ]; then
+  if [ "$backlog" = "null" ]; then
+    exit 0
+  fi
+  if [ "$roadmap_malformed" -gt 0 ]; then
+    echo "pipeline-status: BLOCKED — docs/roadmap.md has $roadmap_malformed malformed section(s); refusing to emit a slug" >&2
+    exit 3
+  fi
   ni=$(next_unfinished)
   [ -n "$ni" ] && jq -rj '.slug' <<< "$ni"
   exit 0
